@@ -27,54 +27,49 @@
     <!-- App assets (app.js MUST load before Alpine.js so alpine:init listener is registered) -->
     <link rel="stylesheet" href="styles.css">
     <script src="app.js"></script>
-  <meta property="og:image" content="https://bolt.new/static/og_default.png">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:image" content="https://bolt.new/static/og_default.png">
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen" x-data="passwordManager()" x-cloak>
 
-    <!-- Header (fixed so it never shifts during overscroll/rubber-banding) -->
-    <header class="fixed top-0 left-0 right-0 z-30 bg-slate-50/95 backdrop-blur-md pb-3 px-4 sm:px-6 lg:px-8 border-b border-slate-200 shadow-xs" style="padding-top:max(1rem,env(safe-area-inset-top))">
-        <div class="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
+    <!-- ============ FIXED HEADER (title + buttons + search, all pinned together) ============ -->
+    <header id="app-header" class="fixed top-0 left-0 right-0 z-30 bg-slate-50/95 backdrop-blur-md border-b border-slate-200 shadow-xs" style="padding-top:max(0.75rem,env(safe-area-inset-top))">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-3">
+            <!-- Row 1: logo + title + buttons -->
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div class="flex items-center gap-3">
                     <div class="bg-indigo-600 text-white p-2.5 rounded-xl shadow-lg shadow-indigo-200 shrink-0">
                         <i class="ph ph-shield-check text-2xl sm:text-3xl"></i>
                     </div>
-                    <div>
+                    <div class="min-w-0">
                         <h1 class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">分享本本</h1>
                         <p class="text-xs sm:text-sm text-slate-500">安全密碼與資料管理（PWA 離線支援）</p>
                     </div>
                 </div>
+                <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+                    <button @click="exportToJson()" class="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3.5 py-2 rounded-lg font-medium text-sm transition-colors shadow-sm">
+                        <i class="ph ph-file-js text-lg"></i><span>匯出 JSON</span>
+                    </button>
+                    <label class="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3.5 py-2 rounded-lg font-medium text-sm transition-colors shadow-sm cursor-pointer">
+                        <i class="ph ph-upload-simple text-lg"></i><span>匯入 JSON</span>
+                        <input type="file" accept=".json,application/json" class="hidden" @change="importFromJson($event)">
+                    </label>
+                    <button @click="exportToHtml()" class="flex-none flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3.5 py-2 rounded-lg font-medium text-sm transition-colors shadow-sm" title="匯出 HTML">
+                        <i class="ph ph-download-simple text-lg"></i><span>匯出 HTML</span>
+                    </button>
+                </div>
             </div>
 
-            <div class="flex flex-wrap gap-2 w-full sm:w-auto">
-                <button @click="exportToJson()" class="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3.5 py-2 rounded-lg font-medium text-sm transition-colors shadow-sm">
-                    <i class="ph ph-file-js text-lg"></i><span>匯出 JSON</span>
-                </button>
-                <label class="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3.5 py-2 rounded-lg font-medium text-sm transition-colors shadow-sm cursor-pointer">
-                    <i class="ph ph-upload-simple text-lg"></i><span>匯入 JSON</span>
-                    <input type="file" accept=".json,application/json" class="hidden" @change="importFromJson($event)">
-                </label>
-                <button @click="exportToHtml()" class="flex-none flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3.5 py-2 rounded-lg font-medium text-sm transition-colors shadow-sm" title="匯出 HTML">
-                    <i class="ph ph-download-simple text-lg"></i><span>匯出 HTML</span>
-                </button>
-            </div>
-        </div>
-    </header>
-
-    <!-- Main (extra top padding to clear the fixed header) -->
-    <main class="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8" style="padding-top:calc(max(1rem,env(safe-area-inset-top)) + var(--header-h))">
-        <!-- Search -->
-        <div class="sticky z-20 bg-slate-50/95 backdrop-blur-md -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-2 mb-5" style="top:calc(max(1rem,env(safe-area-inset-top)) + var(--header-h))">
-            <div class="relative">
+            <!-- Row 2: search bar -->
+            <div class="relative mt-3">
                 <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                     <i class="ph ph-magnifying-glass text-slate-400 text-lg"></i>
                 </div>
                 <input type="text" x-model="searchQuery" placeholder="搜尋網站、帳號或備忘錄..." class="w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white shadow-sm text-sm sm:text-base">
             </div>
         </div>
+    </header>
 
+    <!-- ============ MAIN CONTENT (padding-top set dynamically by JS) ============ -->
+    <main class="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8" id="main-content" style="padding-top:160px">
         <!-- Stats -->
         <div class="mb-4 text-xs sm:text-sm text-slate-500 flex justify-between items-center px-1">
             <span>共 <span class="font-semibold text-slate-700" x-text="filteredPasswords.length"></span> 筆項目</span>
@@ -138,7 +133,7 @@
         </div>
     </main>
 
-    <!-- Floating "+" button (replaces the header 新增 button) -->
+    <!-- Floating "+" button -->
     <button class="fab" @click="openModal()" title="新增項目" aria-label="新增項目">
         <i class="ph ph-plus"></i>
     </button>
