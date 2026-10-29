@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>分享本本</title>
+    
+    <!-- PWA Manifest & Meta Tags -->
+    <link rel="manifest" href="data:application/json;charset=utf-8,%7B%22name%22%3A%22%E5%88%86%E4%BA%AB%E6%9C%AC%E6%9C%AC%22%2C%22short_name%22%3A%22%E5%88%86%E4%BA%AB%E6%9C%AC%E6%9C%AC%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23f8fafc%22%2C%22theme_color%22%3A%22%234f46e5%22%2C%22icons%22%3A%5B%5D%7D">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="分享本本">
+    <meta name="theme-color" content="#4f46e5">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- html2pdf -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- Google Identity Services (for Google Drive API) -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web@2.1.2"></script>
+    <style>
+        i.ph { font-style: normal; }
+        [x-cloak] { display: none !important; }
+        /* 防止手機滑動時標題受到干擾 */
+        body { overscroll-behavior-y: none; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen" x-data="passwordManager()" x-cloak>
+
+    <!-- 固定於頂部的 Header (手指拉動時標題不會被影響/位移) -->
+    <header class="sticky top-0 z-40 bg-slate-50/95 backdrop-blur-md pt-4 pb-4 px-4 sm:px-6 lg:px-8 border-b border-slate-200 shadow-xs">
+        <div class="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
+                <div class="flex items-center gap-3">
+                    <div class="bg-indigo-600 text-white p-2.5 rounded-xl shadow-lg shadow-indigo-200 shrink-0">
+                        <i class="ph ph-shield-check text-2xl sm:text-3xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">分享本本</h1>
+                        <p class="text-xs sm:text-sm text-slate-500">安全密碼與資料管理（PWA 離線支援）</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 操作按鈕列 -->
+            <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+                <button @click="openModal()" x-show="!isReadOnly" class="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 rounded-lg font-medium text-sm transition-colors shadow-sm">
+                    <i class="ph ph-plus-circle text-lg"></i>
+                    <span>新增</span>
+                </button>
+                <button @click="openDriveModal()" class="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-lg font-medium text-sm transition-colors shadow-sm" title="Google Drive 雲端同步">
+                    <i class="ph ph-cloud-arrow-up text-lg"></i>
+                    <span>Google 雲端</span>
+                </button>
+                <button @click="exportToJson()" class="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3.5 py-2 rounded-lg font-medium text-sm transition-colors shadow-sm">
+                    <i class="ph ph-file-js text-lg"></i>
+                    <span>匯出 JSON</span>
+                </button>
+                <label class="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3.5 py-2 rounded-lg font-medium text-sm transition-colors shadow-sm cursor-pointer">
+                    <i class="ph ph-upload-simple text-lg"></i>
+                    <span>匯入 JSON</span>
+                    <input type="file" accept=".json,application/json" class="hidden" @change="importFromJson($event)">
+                </label>
+                <button @click="exportToHtml()" class="flex-none flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3 py-2 rounded-lg font-medium text-sm transition-colors shadow-sm" title="匯出 HTML">
+                    <i class="ph ph-download-simple text-lg"></i>
+                </button>
+                <button @click="exportToPDF()" class="flex-none flex items-center justify-center gap-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 px-3 py-2 rounded-lg font-medium text-sm transition-colors shadow-sm" title="匯出 PDF">
+                    <i class="ph ph-file-pdf text-lg"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要內容區 -->
+    <main class="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
+        <!-- Search bar -->
+        <div class="relative mb-5">
+            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                <i class="ph ph-magnifying-glass text-slate-400 text-lg"></i>
+            </div>
+            <input type="text" x-model="searchQuery" placeholder="搜尋網站、帳號或備忘錄..." class="w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white shadow-sm text-sm sm:text-base">
+        </div>
+
+        <!-- Stats -->
+        <div class="mb-4 text-xs sm:text-sm text-slate-500 flex justify-between items-center px-1">
+            <span>共 <span class="font-semibold text-slate-700" x-text="filteredPasswords.length"></span> 筆項目</span>
+            <span x-show="searchQuery" class="text-indigo-600">（搜尋過濾中）</span>
+        </div>
+
+        <!-- Empty state -->
+        <div x-show="filteredPasswords.length === 0" class="text-center p-12 bg-white rounded-2xl border border-slate-200 shadow-sm my-6">
+            <i class="ph ph-lock-key text-5xl text-slate-300 mb-3"></i>
+            <p class="text-slate-500 text-sm" x-text="searchQuery ? '找不到符合的項目' : '尚無密碼資料，請點擊新增或匯入 JSON'"></p>
+        </div>
+
+        <!-- Password list -->
+        <div x-show="filteredPasswords.length > 0" class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mb-12">
+            <ul class="divide-y divide-slate-100">
+                <template x-for="item in filteredPasswords" :key="item.id">
+                    <li class="p-4 sm:p-5 hover:bg-slate-50/80 transition-colors group">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2.5 mb-2">
+                                    <div class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-sm shrink-0 shadow-inner">
+                                        <span x-text="(item.siteName || '?').charAt(0).toUpperCase()"></span>
+                                    </div>
+                                    <h3 class="text-base font-semibold text-slate-900 truncate" x-text="item.siteName"></h3>
+                                    <a x-show="item.url" :href="item.url.startsWith('http') ? item.url : 'https://' + item.url" target="_blank" class="text-slate-400 hover:text-indigo-600 transition-colors p-1" title="開啟網站">
+                                        <i class="ph ph-link text-base"></i>
+                                    </a>
+                                </div>
+                                <div class="pl-11 space-y-1.5">
+                                    <div class="flex items-center gap-2 group/field">
+                                        <span class="text-xs sm:text-sm font-medium text-slate-400 w-12 shrink-0">帳號:</span>
+                                        <span class="text-xs sm:text-sm text-slate-700 truncate select-all font-mono" x-text="item.username"></span>
+                                        <button @click="copyToClipboard(item.username, '帳號已複製')" class="text-slate-300 hover:text-indigo-600 p-1.5 rounded hover:bg-indigo-50 transition-colors" title="複製帳號">
+                                            <i class="ph ph-copy text-sm"></i>
+                                        </button>
+                                    </div>
+                                    <div class="flex items-center gap-2 group/field">
+                                        <span class="text-xs sm:text-sm font-medium text-slate-400 w-12 shrink-0">密碼:</span>
+                                        <span class="text-xs sm:text-sm text-slate-800 font-mono select-all bg-slate-100/70 px-2 py-0.5 rounded" x-text="item.password"></span>
+                                        <button @click="copyToClipboard(item.password, '密碼已複製')" class="text-slate-300 hover:text-indigo-600 p-1.5 rounded hover:bg-indigo-50 transition-colors" title="複製密碼">
+                                            <i class="ph ph-copy text-sm"></i>
+                                        </button>
+                                    </div>
+                                    <div x-show="item.notes" class="mt-2 text-xs text-slate-500 bg-slate-50 p-2.5 rounded-lg border border-slate-100 whitespace-pre-wrap leading-relaxed">
+                                        <i class="ph ph-note-pencil mr-1 text-indigo-500"></i> <span x-text="item.notes"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-1.5 pl-11 sm:pl-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 justify-end">
+                                <button @click="editItem(item)" class="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="編輯">
+                                    <i class="ph ph-pencil-simple text-lg"></i>
+                                </button>
+                                <button @click="deleteItem(item.id)" class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="刪除">
+                                    <i class="ph ph-trash text-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </li>
+                </template>
+            </ul>
+        </div>
+
+        <!-- Google Drive Sync Modal -->
+        <div x-show="isDriveModalOpen" class="fixed inset-0 z-50 overflow-y-auto" style="display: none;" aria-modal="true">
+            <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                <div x-show="isDriveModalOpen" x-transition.opacity class="fixed inset-0 bg-slate-900 bg-opacity-50 backdrop-blur-xs transition-opacity" @click="isDriveModalOpen = false"></div>
+                <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+                <div x-show="isDriveModalOpen" x-transition class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full p-6">
+                    <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+                        <div class="flex items-center gap-2.5">
+                            <div class="bg-emerald-100 text-emerald-600 p-2 rounded-xl">
+                                <i class="ph ph-google-logo text-xl"></i>
+                            </div>
+                            <h3 class="text-lg font-bold text-slate-900">Google Drive 雲端同步</h3>
+                        </div>
+                        <button @click="isDriveModalOpen = false" class="text-slate-400 hover:text-slate-600 p-1">
+                            <i class="ph ph-x text-lg"></i>
+                        </button>
+                    </div>
+
+                    <!-- 未連線狀態 -->
+                    <div x-show="!isDriveConnected" class="space-y-4">
+                        <p class="text-sm text-slate-600 leading-relaxed">
+                            請輸入您的 Google Cloud OAuth 2.0 Client ID 以連接 Google Drive，直接將「分享本本」的資料備份到您的個人雲端硬碟中。
+                        </p>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Google OAuth Client ID</label>
+                            <input type="text" x-model="gDriveClientId" placeholder="例如: 123456789-abc.apps.googleusercontent.com" class="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <button @click="connectGoogleDrive()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2">
+                            <i class="ph ph-sign-in text-lg"></i>
+                            <span>連接 Google Drive 帳號</span>
+                        </button>
+                    </div>
+
+                    <!-- 已連線狀態 -->
+                    <div x-show="isDriveConnected" class="space-y-5">
+                        <div class="bg-emerald-50 border border-emerald-200 p-3.5 rounded-xl flex items-center justify-between">
+                            <div class="flex items-center gap-2.5 text-emerald-800 text-sm font-medium">
+                                <i class="ph ph-check-circle text-xl text-emerald-600"></i>
+                                <span>已成功連線 Google Drive</span>
+                            </div>
+                            <button @click="isDriveConnected = false; driveAccessToken = ''; showToast('已中斷連線', 'info')" class="text-xs text-rose-600 hover:underline">中斷連線</button>
+                        </div>
+
+                        <div class="flex gap-3">
+                            <button @click="uploadToGoogleDrive()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-4 rounded-lg transition-colors shadow-sm text-sm flex items-center justify-center gap-2">
+                                <i class="ph ph-cloud-arrow-up text-lg"></i>
+                                <span>立即備份至雲端</span>
+                            </button>
+                            <button @click="fetchDriveFiles()" class="flex-1 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-medium py-2.5 px-4 rounded-lg transition-colors shadow-sm text-sm flex items-center justify-center gap-2">
+                                <i class="ph ph-cloud-arrow-down text-lg"></i>
+                                <span>重新整理檔案清單</span>
+                            </button>
+                        </div>
+
+                        <!-- 雲端檔案列表供還原 -->
+                        <div>
+                            <h4 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">雲端備份檔案 (.json)</h4>
+                            <div class="max-h-56 overflow-y-auto border border-slate-200 rounded-xl divide-y divide-slate-100 bg-slate-50/50">
+                                <template x-if="isDriveLoading">
+                                    <div class="p-6 text-center text-sm text-slate-400">正在讀取雲端檔案...</div>
+                                </template>
+                                <template x-if="!isDriveLoading && driveFiles.length === 0">
+                                    <div class="p-6 text-center text-sm text-slate-400">找不到任何備份 JSON 檔案</div>
+                                </template>
+                                <template x-for="file in driveFiles" :key="file.id">
+                                    <div class="p-3 flex items-center justify-between hover:bg-white transition-colors">
+                                        <div class="min-w-0 pr-2">
+                                            <p class="text-sm font-medium text-slate-800 truncate" x-text="file.name"></p>
+                                            <p class="text-xs text-slate-400" x-text="new Date(file.modifiedTime).toLocaleString('zh-TW')"></p>
+                                        </div>
+                                        <button @click="importFromDriveFile(file.id, file.name)" class="shrink-0 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors">
+                                            還原
+                                        </button>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal (Add/Edit) -->
+        <div x-show="isModalOpen" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true" style="display: none;">
+            <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                <div x-show="isModalOpen" x-transition.opacity class="fixed inset-0 bg-slate-900 bg-opacity-50 backdrop-blur-xs transition-opacity" @click="closeModal()"></div>
+                <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+                <div x-show="isModalOpen" x-transition class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
+                    <form @submit.prevent="saveItem">
+                        <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                            <div class="sm:flex sm:items-start">
+                                <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-indigo-100 sm:mx-0 sm:h-10 sm:w-10">
+                                    <i class="ph text-indigo-600 text-xl" :class="editingId ? 'ph-pencil-simple' : 'ph-plus'"></i>
+                                </div>
+                                <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                                    <h3 class="text-lg leading-6 font-medium text-slate-900" id="modal-title" x-text="editingId ? '編輯項目' : '新增密碼項目'"></h3>
+                                    <div class="mt-4 space-y-3.5">
+                                        <div>
+                                            <label class="block text-xs font-semibold text-slate-600 mb-1">網站/服務名稱 <span class="text-red-500">*</span></label>
+                                            <input type="text" x-model="formData.siteName" required class="w-full border border-slate-300 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-semibold text-slate-600 mb-1">網址 (選填)</label>
+                                            <input type="text" x-model="formData.url" placeholder="ex: example.com" class="w-full border border-slate-300 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-semibold text-slate-600 mb-1">帳號/使用者名稱 <span class="text-red-500">*</span></label>
+                                            <input type="text" x-model="formData.username" required class="w-full border border-slate-300 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-semibold text-slate-600 mb-1">密碼 <span class="text-red-500">*</span></label>
+                                            <div class="relative">
+                                                <input :type="showPasswordInModal ? 'text' : 'password'" x-model="formData.password" required class="w-full border border-slate-300 rounded-lg px-3.5 py-2 pr-10 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                                <button type="button" @click="showPasswordInModal = !showPasswordInModal" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600">
+                                                    <i class="ph text-lg" :class="showPasswordInModal ? 'ph-eye-slash' : 'ph-eye'"></i>
+                                                </button>
+                                            </div>
+                                            <div class="mt-2">
+                                                <button type="button" @click="generatePassword" class="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1 font-medium">
+                                                    <i class="ph ph-magic-wand text-sm"></i> 產生安全隨機密碼
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-semibold text-slate-600 mb-1">備忘錄 (選填)</label>
+                                            <textarea x-model="formData.notes" rows="2" class="w-full border border-slate-300 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-slate-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse rounded-b-2xl gap-2">
+                            <button type="submit" class="w-full sm:w-auto inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">儲存</button>
+                            <button type="button" @click="closeModal()" class="mt-3 sm:mt-0 w-full sm:w-auto inline-flex justify-center rounded-lg border border-slate-300 shadow-sm px-4 py-2 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500">取消</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notification -->
+        <div class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
+            <template x-for="toast in toasts" :key="toast.id">
+                <div class="bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-3 min-w-[220px] pointer-events-auto border border-slate-800"
+                     x-transition>
+                    <i class="ph text-xl shrink-0" :class="toast.type === 'success' ? 'ph-check-circle text-emerald-400' : (toast.type === 'error' ? 'ph-warning-circle text-rose-400' : 'ph-info text-sky-400')"></i>
+                    <span x-text="toast.message" class="text-sm font-medium"></span>
+                </div>
+            </template>
+        </div>
+    </main>
+
+    <script>
+        // 預設資料庫
+        const initialData = [
+            {
+                "siteName": "Google",
+                "url": "google.com",
+                "username": "imkwong60",
+                "password": "K420..k",
+                "notes": "",
+                "id": "1"
+            },
+            {
+                "siteName": "Hktvmall",
+                "url": "https://www.hktvmall.com/",
+                "username": "imkwong60@gmail.com",
+                "password": "k1234567",
+                "notes": "",
+                "id": "1785818230959tjcvlex"
+            }
+        ];
+
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('passwordManager', () => ({
+                passwords: [],
+                searchQuery: '',
+                isModalOpen: false,
+                editingId: null,
+                showPasswordInModal: false,
+                toasts: [],
+                isReadOnly: false,
+                formData: { siteName: '', url: '', username: '', password: '', notes: '' },
+                
+                // Google Drive 狀態
+                isDriveModalOpen: false,
+                gDriveClientId: localStorage.getItem('pm_gdrive_client_id') || '',
+                isDriveConnected: false,
+                driveAccessToken: '',
+                driveFiles: [],
+                isDriveLoading: false,
+
+                init() {
+                    const savedData = localStorage.getItem('fenxiang_benben_data');
+                    if (savedData) {
+                        try {
+                            this.passwords = JSON.parse(savedData);
+                        } catch (e) {
+                            console.error("解析儲存資料失敗", e);
+                            this.passwords = initialData;
+                        }
+                    } else {
+                        this.passwords = initialData;
+                    }
+
+                    // 註冊 PWA Service Worker 實現離線運作
+                    if ('serviceWorker' in navigator) {
+                        window.addEventListener('load', () => {
+                            const swCode = `
+                                self.addEventListener('install', e => e.waitUntil(self.skipWaiting()));
+                                self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
+                                self.addEventListener('fetch', e => {
+                                    e.respondWith(
+                                        caches.match(e.request).then(res => res || fetch(e.request).catch(() => caches.match('./')))
+                                    );
+                                });
+                            `;
+                            const blob = new Blob([swCode], { type: 'text/javascript' });
+                            navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(err => console.log('SW failed', err));
+                        });
+                    }
+                },
+
+                saveToLocalStorage() {
+                    localStorage.setItem('fenxiang_benben_data', JSON.stringify(this.passwords));
+                },
+
+                get filteredPasswords() {
+                    if (!this.searchQuery) return this.passwords;
+                    const q = this.searchQuery.toLowerCase();
+                    return this.passwords.filter(p =>
+                        (p.siteName || '').toLowerCase().includes(q) ||
+                        (p.username || '').toLowerCase().includes(q) ||
+                        (p.notes || '').toLowerCase().includes(q)
+                    );
+                },
+
+                openModal() {
+                    this.isModalOpen = true;
+                },
+
+                closeModal() {
+                    this.isModalOpen = false;
+                    this.resetForm();
+                },
+
+                resetForm() {
+                    this.editingId = null;
+                    this.showPasswordInModal = false;
+                    this.formData = { siteName: '', url: '', username: '', password: '', notes: '' };
+                },
+
+                editItem(item) {
+                    this.editingId = item.id;
+                    this.formData = { ...item };
+                    this.openModal();
+                },
+
+                saveItem() {
+                    if (this.editingId) {
+                        const index = this.passwords.findIndex(p => p.id === this.editingId);
+                        if (index !== -1) {
+                            this.passwords[index] = { ...this.formData, id: this.editingId };
+                            this.showToast('項目已更新', 'success');
+                        }
+                    } else {
+                        const newItem = {
+                            ...this.formData,
+                            id: Date.now().toString() + Math.random().toString(36).substring(2, 9)
+                        };
+                        this.passwords.unshift(newItem);
+                        this.showToast('項目已新增', 'success');
+                    }
+                    this.saveToLocalStorage();
+                    this.closeModal();
+                },
+
+                deleteItem(id) {
+                    if (confirm('確定要刪除這個密碼項目嗎？')) {
+                        this.passwords = this.passwords.filter(p => p.id !== id);
+                        this.saveToLocalStorage();
+                        this.showToast('項目已刪除', 'info');
+                    }
+                },
+
+                copyToClipboard(text, successMessage) {
+                    if (navigator.clipboard && window.isSecureContext) {
+                        navigator.clipboard.writeText(text).then(() => {
+                            this.showToast(successMessage, 'success');
+                        }).catch(() => this.fallbackCopy(text, successMessage));
+                    } else {
+                        this.fallbackCopy(text, successMessage);
+                    }
+                },
+
+                fallbackCopy(text, successMessage) {
+                    const textArea = document.createElement("textarea");
+                    textArea.value = text;
+                    textArea.style.position = "fixed";
+                    document.body.appendChild(textArea);
+                    textArea.focus();
+                    textArea.select();
+                    try {
+                        document.execCommand('copy');
+                        this.showToast(successMessage, 'success');
+                    } catch (err) {
+                        this.showToast('複製失敗', 'error');
+                    }
+                    document.body.removeChild(textArea);
+                },
+
+                generatePassword() {
+                    const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+";
+                    let password = "";
+                    for (let i = 0; i < 16; ++i) {
+                        password += chars.charAt(Math.floor(Math.random() * chars.length));
+                    }
+                    this.formData.password = password;
+                    this.showPasswordInModal = true;
+                },
+
+                showToast(message, type = 'info') {
+                    const id = Date.now();
+                    this.toasts.push({ id, message, type });
+                    setTimeout(() => {
+                        this.toasts = this.toasts.filter(t => t.id !== id);
+                    }, 3000);
+                },
+
+                // JSON 匯出
+                exportToJson() {
+                    if (this.passwords.length === 0) {
+                        this.showToast('沒有資料可匯出', 'error');
+                        return;
+                    }
+                    const blob = new Blob([JSON.stringify(this.passwords, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `fenxiang_benben_${new Date().toISOString().slice(0,10)}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    setTimeout(() => {
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                    }, 0);
+                    this.showToast('JSON 已成功匯出', 'success');
+                },
+
+                // JSON 匯入
+                importFromJson(event) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const imported = JSON.parse(e.target.result);
+                            if (!Array.isArray(imported)) {
+                                this.showToast('JSON 格式錯誤', 'error');
+                                return;
+                            }
+                            const withIds = imported.map(item => ({
+                                siteName: item.siteName || '',
+                                url: item.url || '',
+                                username: item.username || '',
+                                password: item.password || '',
+                                notes: item.notes || '',
+                                id: item.id || (Date.now().toString() + Math.random().toString(36).substring(2, 9))
+                            }));
+                            if (confirm(`即將匯入 ${withIds.length} 筆資料。\n點擊「確定」取代現有資料，取消則合併。`)) {
+                                this.passwords = withIds;
+                            } else {
+                                const map = new Map();
+                                this.passwords.forEach(p => map.set(p.id, p));
+                                withIds.forEach(p => map.set(p.id, p));
+                                this.passwords = Array.from(map.values());
+                            }
+                            this.saveToLocalStorage();
+                            this.showToast(`已成功匯入 ${withIds.length} 筆資料`, 'success');
+                        } catch (err) {
+                            this.showToast('JSON 解析失敗', 'error');
+                        }
+                        event.target.value = '';
+                    };
+                    reader.readAsText(file);
+                },
+
+                // Google Drive 整合功能
+                openDriveModal() {
+                    this.isDriveModalOpen = true;
+                    if (this.isDriveConnected) {
+                        this.fetchDriveFiles();
+                    }
+                },
+
+                connectGoogleDrive() {
+                    if (!this.gDriveClientId) {
+                        this.showToast('請輸入 Google OAuth Client ID', 'error');
+                        return;
+                    }
+                    localStorage.setItem('pm_gdrive_client_id', this.gDriveClientId);
+
+                    if (!window.google || !window.google.accounts || !window.google.accounts.oauth2) {
+                        this.showToast('Google 登入模組載入中，請稍候', 'info');
+                        return;
+                    }
+
+                    const client = google.accounts.oauth2.initTokenClient({
+                        client_id: this.gDriveClientId,
+                        scope: 'https://www.googleapis.com/auth/drive.file',
+                        callback: (response) => {
+                            if (response.error) {
+                                this.showToast('Google 授權失敗', 'error');
+                                return;
+                            }
+                            this.driveAccessToken = response.access_token;
+                            this.isDriveConnected = true;
+                            this.showToast('Google Drive 連線成功', 'success');
+                            this.fetchDriveFiles();
+                        }
+                    });
+                    client.requestAccessToken();
+                },
+
+                async uploadToGoogleDrive() {
+                    if (!this.driveAccessToken) return;
+                    this.showToast('正在上傳至 Google Drive...', 'info');
+                    const metadata = {
+                        name: `fenxiang_benben_backup_${new Date().toISOString().slice(0,10)}.json`,
+                        mimeType: 'application/json'
+                    };
+                    const form = new FormData();
+                    form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+                    form.append('file', new Blob([JSON.stringify(this.passwords, null, 2)], { type: 'application/json' }));
+
+                    try {
+                        const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+                            method: 'POST',
+                            headers: { 'Authorization': 'Bearer ' + this.driveAccessToken },
+                            body: form
+                        });
+                        if (res.ok) {
+                            this.showToast('成功備份至 Google Drive！', 'success');
+                            this.fetchDriveFiles();
+                        } else {
+                            this.showToast('上傳失敗', 'error');
+                        }
+                    } catch (e) {
+                        this.showToast('上傳發生錯誤', 'error');
+                    }
+                },
+
+                async fetchDriveFiles() {
+                    if (!this.driveAccessToken) return;
+                    this.isDriveLoading = true;
+                    try {
+                        const res = await fetch("https://www.googleapis.com/drive/v3/files?q=mimeType%3D%27application/json%27%20and%20trashed%3Dfalse&fields=files(id,name,modifiedTime)", {
+                            headers: { 'Authorization': 'Bearer ' + this.driveAccessToken }
+                        });
+                        if (res.ok) {
+                            const data = await res.json();
+                            this.driveFiles = data.files || [];
+                        } else {
+                            this.showToast('讀取雲端檔案失敗', 'error');
+                        }
+                    } catch (e) {
+                        this.showToast('讀取發生錯誤', 'error');
+                    } finally {
+                        this.isDriveLoading = false;
+                    }
+                },
+
+                async importFromDriveFile(fileId, fileName) {
+                    if (!this.driveAccessToken) return;
+                    this.showToast(`正在下載 ${fileName}...`, 'info');
+                    try {
+                        const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+                            headers: { 'Authorization': 'Bearer ' + this.driveAccessToken }
+                        });
+                        if (res.ok) {
+                            const imported = await res.json();
+                            if (!Array.isArray(imported)) {
+                                this.showToast('檔案格式錯誤', 'error');
+                                return;
+                            }
+                            const withIds = imported.map(item => ({
+                                siteName: item.siteName || '',
+                                url: item.url || '',
+                                username: item.username || '',
+                                password: item.password || '',
+                                notes: item.notes || '',
+                                id: item.id || (Date.now().toString() + Math.random().toString(36).substring(2, 9))
+                            }));
+                            if (confirm(`從雲端匯入 ${withIds.length} 筆資料。\n確定要取代現有資料嗎？（取消則合併）`)) {
+                                this.passwords = withIds;
+                            } else {
+                                const map = new Map();
+                                this.passwords.forEach(p => map.set(p.id, p));
+                                withIds.forEach(p => map.set(p.id, p));
+                                this.passwords = Array.from(map.values());
+                            }
+                            this.saveToLocalStorage();
+                            this.showToast(`成功從雲端還原 ${withIds.length} 筆資料`, 'success');
+                            this.isDriveModalOpen = false;
+                        } else {
+                            this.showToast('下載檔案失敗', 'error');
+                        }
+                    } catch (e) {
+                        this.showToast('下載發生錯誤', 'error');
+                    }
+                },
+
+                exportToHtml() {
+                    let html = document.documentElement.outerHTML;
+                    const dataStr = JSON.stringify(this.passwords, null, 4);
+                    html = html.replace(/const initialData = (\[[\s\S]*?\]);/, `const initialData = ${dataStr};`);
+                    const blob = new Blob([html], { type: 'text/html' });
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = `fenxiang_benben_backup.html`;
+                    document.body.appendChild(a);
+                    a.click();
+                    setTimeout(() => document.body.removeChild(a), 0);
+                    this.showToast('HTML 備份已匯出', 'success');
+                },
+
+                exportToPDF() {
+                    if (this.passwords.length === 0) {
+                        this.showToast('沒有資料可匯出', 'error');
+                        return;
+                    }
+                    if (typeof html2pdf === 'undefined') {
+                        this.showToast('PDF 模組載入失敗', 'error');
+                        return;
+                    }
+                    this.showToast('正在產生 PDF...', 'info');
+                    const container = document.createElement('div');
+                    container.style.padding = '20px';
+                    container.style.fontFamily = 'sans-serif';
+                    let htmlStr = `<h2 style="text-align:center;border-bottom:2px solid #ccc;padding-bottom:10px;">分享本本 - 備份清單</h2>`;
+                    this.passwords.forEach(item => {
+                        htmlStr += `<div style="margin-bottom:15px;padding:10px;border:1px solid #ddd;border-radius:6px;background:#f9f9f9;">
+                            <h3 style="margin:0 0 5px 0;">${item.siteName}</h3>
+                            <p style="margin:2px 0;"><b>帳號:</b> ${item.username}</p>
+                            <p style="margin:2px 0;font-family:monospace;"><b>密碼:</b> ${item.password}</p>
+                            ${item.notes ? `<p style="margin:2px 0;font-size:12px;color:#666;">備註: ${item.notes}</p>` : ''}
+                        </div>`;
+                    });
+                    container.innerHTML = htmlStr;
+                    html2pdf().set({
+                        margin: 10,
+                        filename: `fenxiang_benben_${Date.now()}.pdf`,
+                        image: { type: 'jpeg', quality: 0.98 },
+                        html2canvas: { scale: 2 },
+                        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                    }).from(container).save().then(() => {
+                        this.showToast('PDF 下載成功', 'success');
+                    });
+                }
+            }));
+        });
+    </script>
+</body>
+</html>
