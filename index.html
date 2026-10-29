@@ -64,13 +64,15 @@
     </header>
 
     <!-- Main (extra top padding to clear the fixed header) -->
-    <main class="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8" style="padding-top:calc(max(1rem,env(safe-area-inset-top)) + 80px)">
+    <main class="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8" style="padding-top:calc(max(1rem,env(safe-area-inset-top)) + var(--header-h))">
         <!-- Search -->
-        <div class="relative mb-5">
-            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                <i class="ph ph-magnifying-glass text-slate-400 text-lg"></i>
+        <div class="sticky z-20 bg-slate-50/95 backdrop-blur-md -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-2 mb-5" style="top:calc(max(1rem,env(safe-area-inset-top)) + var(--header-h))">
+            <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                    <i class="ph ph-magnifying-glass text-slate-400 text-lg"></i>
+                </div>
+                <input type="text" x-model="searchQuery" placeholder="搜尋網站、帳號或備忘錄..." class="w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white shadow-sm text-sm sm:text-base">
             </div>
-            <input type="text" x-model="searchQuery" placeholder="搜尋網站、帳號或備忘錄..." class="w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white shadow-sm text-sm sm:text-base">
         </div>
 
         <!-- Stats -->
