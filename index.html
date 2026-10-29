@@ -16,10 +16,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Alpine.js -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <!-- html2pdf -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <!-- Google Identity Services (for Google Drive API) -->
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web@2.1.2"></script>
     <style>
@@ -52,10 +48,6 @@
                     <i class="ph ph-plus-circle text-lg"></i>
                     <span>新增</span>
                 </button>
-                <button @click="openDriveModal()" class="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-lg font-medium text-sm transition-colors shadow-sm" title="Google Drive 雲端同步">
-                    <i class="ph ph-cloud-arrow-up text-lg"></i>
-                    <span>Google 雲端</span>
-                </button>
                 <button @click="exportToJson()" class="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3.5 py-2 rounded-lg font-medium text-sm transition-colors shadow-sm">
                     <i class="ph ph-file-js text-lg"></i>
                     <span>匯出 JSON</span>
@@ -65,11 +57,9 @@
                     <span>匯入 JSON</span>
                     <input type="file" accept=".json,application/json" class="hidden" @change="importFromJson($event)">
                 </label>
-                <button @click="exportToHtml()" class="flex-none flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3 py-2 rounded-lg font-medium text-sm transition-colors shadow-sm" title="匯出 HTML">
+                <button @click="exportToHtml()" class="flex-none flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3.5 py-2 rounded-lg font-medium text-sm transition-colors shadow-sm" title="匯出 HTML">
                     <i class="ph ph-download-simple text-lg"></i>
-                </button>
-                <button @click="exportToPDF()" class="flex-none flex items-center justify-center gap-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 px-3 py-2 rounded-lg font-medium text-sm transition-colors shadow-sm" title="匯出 PDF">
-                    <i class="ph ph-file-pdf text-lg"></i>
+                    <span>匯出 HTML</span>
                 </button>
             </div>
         </div>
@@ -145,88 +135,6 @@
                     </li>
                 </template>
             </ul>
-        </div>
-
-        <!-- Google Drive Sync Modal -->
-        <div x-show="isDriveModalOpen" class="fixed inset-0 z-50 overflow-y-auto" style="display: none;" aria-modal="true">
-            <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-                <div x-show="isDriveModalOpen" x-transition.opacity class="fixed inset-0 bg-slate-900 bg-opacity-50 backdrop-blur-xs transition-opacity" @click="isDriveModalOpen = false"></div>
-                <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
-                <div x-show="isDriveModalOpen" x-transition class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full p-6">
-                    <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
-                        <div class="flex items-center gap-2.5">
-                            <div class="bg-emerald-100 text-emerald-600 p-2 rounded-xl">
-                                <i class="ph ph-google-logo text-xl"></i>
-                            </div>
-                            <h3 class="text-lg font-bold text-slate-900">Google Drive 雲端同步</h3>
-                        </div>
-                        <button @click="isDriveModalOpen = false" class="text-slate-400 hover:text-slate-600 p-1">
-                            <i class="ph ph-x text-lg"></i>
-                        </button>
-                    </div>
-
-                    <!-- 未連線狀態 -->
-                    <div x-show="!isDriveConnected" class="space-y-4">
-                        <p class="text-sm text-slate-600 leading-relaxed">
-                            請輸入您的 Google Cloud OAuth 2.0 Client ID 以連接 Google Drive，直接將「分享本本」的資料備份到您的個人雲端硬碟中。
-                        </p>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Google OAuth Client ID</label>
-                            <input type="text" x-model="gDriveClientId" placeholder="例如: 123456789-abc.apps.googleusercontent.com" class="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        </div>
-                        <button @click="connectGoogleDrive()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2">
-                            <i class="ph ph-sign-in text-lg"></i>
-                            <span>連接 Google Drive 帳號</span>
-                        </button>
-                    </div>
-
-                    <!-- 已連線狀態 -->
-                    <div x-show="isDriveConnected" class="space-y-5">
-                        <div class="bg-emerald-50 border border-emerald-200 p-3.5 rounded-xl flex items-center justify-between">
-                            <div class="flex items-center gap-2.5 text-emerald-800 text-sm font-medium">
-                                <i class="ph ph-check-circle text-xl text-emerald-600"></i>
-                                <span>已成功連線 Google Drive</span>
-                            </div>
-                            <button @click="isDriveConnected = false; driveAccessToken = ''; showToast('已中斷連線', 'info')" class="text-xs text-rose-600 hover:underline">中斷連線</button>
-                        </div>
-
-                        <div class="flex gap-3">
-                            <button @click="uploadToGoogleDrive()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-4 rounded-lg transition-colors shadow-sm text-sm flex items-center justify-center gap-2">
-                                <i class="ph ph-cloud-arrow-up text-lg"></i>
-                                <span>立即備份至雲端</span>
-                            </button>
-                            <button @click="fetchDriveFiles()" class="flex-1 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-medium py-2.5 px-4 rounded-lg transition-colors shadow-sm text-sm flex items-center justify-center gap-2">
-                                <i class="ph ph-cloud-arrow-down text-lg"></i>
-                                <span>重新整理檔案清單</span>
-                            </button>
-                        </div>
-
-                        <!-- 雲端檔案列表供還原 -->
-                        <div>
-                            <h4 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">雲端備份檔案 (.json)</h4>
-                            <div class="max-h-56 overflow-y-auto border border-slate-200 rounded-xl divide-y divide-slate-100 bg-slate-50/50">
-                                <template x-if="isDriveLoading">
-                                    <div class="p-6 text-center text-sm text-slate-400">正在讀取雲端檔案...</div>
-                                </template>
-                                <template x-if="!isDriveLoading && driveFiles.length === 0">
-                                    <div class="p-6 text-center text-sm text-slate-400">找不到任何備份 JSON 檔案</div>
-                                </template>
-                                <template x-for="file in driveFiles" :key="file.id">
-                                    <div class="p-3 flex items-center justify-between hover:bg-white transition-colors">
-                                        <div class="min-w-0 pr-2">
-                                            <p class="text-sm font-medium text-slate-800 truncate" x-text="file.name"></p>
-                                            <p class="text-xs text-slate-400" x-text="new Date(file.modifiedTime).toLocaleString('zh-TW')"></p>
-                                        </div>
-                                        <button @click="importFromDriveFile(file.id, file.name)" class="shrink-0 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors">
-                                            還原
-                                        </button>
-                                    </div>
-                                </template>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
 
         <!-- Modal (Add/Edit) -->
@@ -330,14 +238,6 @@
                 toasts: [],
                 isReadOnly: false,
                 formData: { siteName: '', url: '', username: '', password: '', notes: '' },
-                
-                // Google Drive 狀態
-                isDriveModalOpen: false,
-                gDriveClientId: localStorage.getItem('pm_gdrive_client_id') || '',
-                isDriveConnected: false,
-                driveAccessToken: '',
-                driveFiles: [],
-                isDriveLoading: false,
 
                 init() {
                     const savedData = localStorage.getItem('fenxiang_benben_data');
@@ -534,131 +434,6 @@
                     reader.readAsText(file);
                 },
 
-                // Google Drive 整合功能
-                openDriveModal() {
-                    this.isDriveModalOpen = true;
-                    if (this.isDriveConnected) {
-                        this.fetchDriveFiles();
-                    }
-                },
-
-                connectGoogleDrive() {
-                    if (!this.gDriveClientId) {
-                        this.showToast('請輸入 Google OAuth Client ID', 'error');
-                        return;
-                    }
-                    localStorage.setItem('pm_gdrive_client_id', this.gDriveClientId);
-
-                    if (!window.google || !window.google.accounts || !window.google.accounts.oauth2) {
-                        this.showToast('Google 登入模組載入中，請稍候', 'info');
-                        return;
-                    }
-
-                    const client = google.accounts.oauth2.initTokenClient({
-                        client_id: this.gDriveClientId,
-                        scope: 'https://www.googleapis.com/auth/drive.file',
-                        callback: (response) => {
-                            if (response.error) {
-                                this.showToast('Google 授權失敗', 'error');
-                                return;
-                            }
-                            this.driveAccessToken = response.access_token;
-                            this.isDriveConnected = true;
-                            this.showToast('Google Drive 連線成功', 'success');
-                            this.fetchDriveFiles();
-                        }
-                    });
-                    client.requestAccessToken();
-                },
-
-                async uploadToGoogleDrive() {
-                    if (!this.driveAccessToken) return;
-                    this.showToast('正在上傳至 Google Drive...', 'info');
-                    const metadata = {
-                        name: `fenxiang_benben_backup_${new Date().toISOString().slice(0,10)}.json`,
-                        mimeType: 'application/json'
-                    };
-                    const form = new FormData();
-                    form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-                    form.append('file', new Blob([JSON.stringify(this.passwords, null, 2)], { type: 'application/json' }));
-
-                    try {
-                        const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-                            method: 'POST',
-                            headers: { 'Authorization': 'Bearer ' + this.driveAccessToken },
-                            body: form
-                        });
-                        if (res.ok) {
-                            this.showToast('成功備份至 Google Drive！', 'success');
-                            this.fetchDriveFiles();
-                        } else {
-                            this.showToast('上傳失敗', 'error');
-                        }
-                    } catch (e) {
-                        this.showToast('上傳發生錯誤', 'error');
-                    }
-                },
-
-                async fetchDriveFiles() {
-                    if (!this.driveAccessToken) return;
-                    this.isDriveLoading = true;
-                    try {
-                        const res = await fetch("https://www.googleapis.com/drive/v3/files?q=mimeType%3D%27application/json%27%20and%20trashed%3Dfalse&fields=files(id,name,modifiedTime)", {
-                            headers: { 'Authorization': 'Bearer ' + this.driveAccessToken }
-                        });
-                        if (res.ok) {
-                            const data = await res.json();
-                            this.driveFiles = data.files || [];
-                        } else {
-                            this.showToast('讀取雲端檔案失敗', 'error');
-                        }
-                    } catch (e) {
-                        this.showToast('讀取發生錯誤', 'error');
-                    } finally {
-                        this.isDriveLoading = false;
-                    }
-                },
-
-                async importFromDriveFile(fileId, fileName) {
-                    if (!this.driveAccessToken) return;
-                    this.showToast(`正在下載 ${fileName}...`, 'info');
-                    try {
-                        const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
-                            headers: { 'Authorization': 'Bearer ' + this.driveAccessToken }
-                        });
-                        if (res.ok) {
-                            const imported = await res.json();
-                            if (!Array.isArray(imported)) {
-                                this.showToast('檔案格式錯誤', 'error');
-                                return;
-                            }
-                            const withIds = imported.map(item => ({
-                                siteName: item.siteName || '',
-                                url: item.url || '',
-                                username: item.username || '',
-                                password: item.password || '',
-                                notes: item.notes || '',
-                                id: item.id || (Date.now().toString() + Math.random().toString(36).substring(2, 9))
-                            }));
-                            if (confirm(`從雲端匯入 ${withIds.length} 筆資料。\n確定要取代現有資料嗎？（取消則合併）`)) {
-                                this.passwords = withIds;
-                            } else {
-                                const map = new Map();
-                                this.passwords.forEach(p => map.set(p.id, p));
-                                withIds.forEach(p => map.set(p.id, p));
-                                this.passwords = Array.from(map.values());
-                            }
-                            this.saveToLocalStorage();
-                            this.showToast(`成功從雲端還原 ${withIds.length} 筆資料`, 'success');
-                            this.isDriveModalOpen = false;
-                        } else {
-                            this.showToast('下載檔案失敗', 'error');
-                        }
-                    } catch (e) {
-                        this.showToast('下載發生錯誤', 'error');
-                    }
-                },
-
                 exportToHtml() {
                     let html = document.documentElement.outerHTML;
                     const dataStr = JSON.stringify(this.passwords, null, 4);
@@ -671,40 +446,6 @@
                     a.click();
                     setTimeout(() => document.body.removeChild(a), 0);
                     this.showToast('HTML 備份已匯出', 'success');
-                },
-
-                exportToPDF() {
-                    if (this.passwords.length === 0) {
-                        this.showToast('沒有資料可匯出', 'error');
-                        return;
-                    }
-                    if (typeof html2pdf === 'undefined') {
-                        this.showToast('PDF 模組載入失敗', 'error');
-                        return;
-                    }
-                    this.showToast('正在產生 PDF...', 'info');
-                    const container = document.createElement('div');
-                    container.style.padding = '20px';
-                    container.style.fontFamily = 'sans-serif';
-                    let htmlStr = `<h2 style="text-align:center;border-bottom:2px solid #ccc;padding-bottom:10px;">分享本本 - 備份清單</h2>`;
-                    this.passwords.forEach(item => {
-                        htmlStr += `<div style="margin-bottom:15px;padding:10px;border:1px solid #ddd;border-radius:6px;background:#f9f9f9;">
-                            <h3 style="margin:0 0 5px 0;">${item.siteName}</h3>
-                            <p style="margin:2px 0;"><b>帳號:</b> ${item.username}</p>
-                            <p style="margin:2px 0;font-family:monospace;"><b>密碼:</b> ${item.password}</p>
-                            ${item.notes ? `<p style="margin:2px 0;font-size:12px;color:#666;">備註: ${item.notes}</p>` : ''}
-                        </div>`;
-                    });
-                    container.innerHTML = htmlStr;
-                    html2pdf().set({
-                        margin: 10,
-                        filename: `fenxiang_benben_${Date.now()}.pdf`,
-                        image: { type: 'jpeg', quality: 0.98 },
-                        html2canvas: { scale: 2 },
-                        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-                    }).from(container).save().then(() => {
-                        this.showToast('PDF 下載成功', 'success');
-                    });
                 }
             }));
         });
