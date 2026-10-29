@@ -24,17 +24,17 @@
     <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web@2.1.2"></script>
 
-    <!-- App assets -->
+    <!-- App assets (app.js MUST load before Alpine.js so alpine:init listener is registered) -->
     <link rel="stylesheet" href="styles.css">
-    <script defer src="app.js"></script>
+    <script src="app.js"></script>
   <meta property="og:image" content="https://bolt.new/static/og_default.png">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:image" content="https://bolt.new/static/og_default.png">
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen" x-data="passwordManager()" x-cloak>
 
-    <!-- Header -->
-    <header class="sticky top-0 z-30 bg-slate-50/95 backdrop-blur-md pt-4 pb-3 px-4 sm:px-6 lg:px-8 border-b border-slate-200 shadow-xs" style="padding-top:max(1rem,env(safe-area-inset-top))">
+    <!-- Header (fixed so it never shifts during overscroll/rubber-banding) -->
+    <header class="fixed top-0 left-0 right-0 z-30 bg-slate-50/95 backdrop-blur-md pb-3 px-4 sm:px-6 lg:px-8 border-b border-slate-200 shadow-xs" style="padding-top:max(1rem,env(safe-area-inset-top))">
         <div class="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
             <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
                 <div class="flex items-center gap-3">
@@ -63,8 +63,8 @@
         </div>
     </header>
 
-    <!-- Main -->
-    <main class="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
+    <!-- Main (extra top padding to clear the fixed header) -->
+    <main class="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8" style="padding-top:calc(max(1rem,env(safe-area-inset-top)) + 80px)">
         <!-- Search -->
         <div class="relative mb-5">
             <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
