@@ -11,7 +11,9 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="分享本本">
-    <meta name="theme-color" content="#0071e3">
+    <!-- 改為淺色主題，避免狀態列 / 下拉 overscroll 出現藍色 -->
+    <meta name="theme-color" content="#fbfbfd">
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#fbfbfd">
     <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
@@ -43,11 +45,20 @@
         --lab-radius: 18px;
       }
       [x-cloak] { display: none !important; }
-      html { background: var(--lab-bg); -webkit-text-size-adjust: 100%; }
+      /* 強制整頁（含 overscroll）都用同一淺色，避免滑動時出現藍色 */
+      html {
+        background: var(--lab-bg) !important;
+        -webkit-text-size-adjust: 100%;
+        overscroll-behavior-y: none;
+      }
       body {
-        margin: 0; background: var(--lab-bg) !important; color: var(--lab-text) !important;
+        margin: 0;
+        background: var(--lab-bg) !important;
+        color: var(--lab-text) !important;
         font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
         -webkit-tap-highlight-color: transparent;
+        min-height: 100dvh;
+        overscroll-behavior-y: none;
       }
       button, input, textarea { font: inherit; }
       button, label[for] { touch-action: manipulation; }
@@ -63,11 +74,11 @@
         box-shadow: 0 0 0 3px rgba(0,113,227,.12) !important;
       }
       #app-header {
-        background: rgba(251,251,253,.92) !important;
+        background: #fbfbfd !important; /* 不透明，避免滑動時透出其他顏色 */
         border-color: rgba(210,210,215,.78) !important;
         box-shadow: 0 1px 0 rgba(0,0,0,.025) !important;
-        -webkit-backdrop-filter: saturate(180%) blur(20px);
-        backdrop-filter: saturate(180%) blur(20px);
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
       }
       #app-header > div { max-width: 760px; padding-left: 16px; padding-right: 16px; }
       #app-header h1 { color: var(--lab-text) !important; letter-spacing: -.035em; }
@@ -137,7 +148,12 @@
         }
         #app-header .relative.mt-3 { margin-top: 10px !important; }
         #app-header input { padding-top: 11px !important; padding-bottom: 11px !important; }
-        #main-content { padding-left: 12px !important; padding-right: 12px !important; }
+        #main-content {
+          padding-left: 12px !important;
+          padding-right: 12px !important;
+          /* 手機 header 高度約 190–220px，再加一點緩衝 */
+          padding-top: max(220px, calc(env(safe-area-inset-top) + 200px)) !important;
+        }
         #main-content > div.mb-4 { margin-bottom: 10px; }
         #main-content .overflow-hidden.mb-16 { margin-bottom: 90px; }
         #main-content ul > li { padding: 15px 13px !important; }
@@ -161,10 +177,10 @@
     </style>
 
 </head>
-<body class="bg-[#fbfbfd] text-[#1d1d1f] font-sans antialiased min-h-screen" x-data="passwordManager()" x-cloak>
+<body class="bg-[#fbfbfd] text-[#1d1d1f] font-sans antialiased min-h-screen" style="background:#fbfbfd;" x-data="passwordManager()" x-cloak>
 
     <!-- ============ FIXED HEADER (title + buttons + search, all pinned together) ============ -->
-    <header id="app-header" class="fixed top-0 left-0 right-0 z-30 bg-slate-50/95 backdrop-blur-md border-b border-slate-200 shadow-xs" style="padding-top:max(0.75rem,env(safe-area-inset-top))">
+    <header id="app-header" class="fixed top-0 left-0 right-0 z-30 border-b border-slate-200" style="padding-top:max(0.75rem,env(safe-area-inset-top)); background:#fbfbfd;">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-3">
             <!-- Row 1: logo + title + buttons -->
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
@@ -201,8 +217,9 @@
         </div>
     </header>
 
-    <!-- ============ MAIN CONTENT (padding-top set dynamically by JS) ============ -->
-    <main class="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8" id="main-content" style="padding-top:160px">
+    <!-- ============ MAIN CONTENT ============ -->
+    <!-- 手機 header 較高（按鈕變兩排），預留足夠空間避免卡片被擋 -->
+    <main class="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8" id="main-content" style="padding-top: max(200px, calc(env(safe-area-inset-top) + 180px))">
         <!-- Stats -->
         <div class="mb-4 text-xs sm:text-sm text-slate-500 flex justify-between items-center px-1">
             <span>共 <span class="font-semibold text-slate-700" x-text="filteredPasswords.length"></span> 筆項目</span>
