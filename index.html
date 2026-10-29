@@ -157,10 +157,11 @@
         #main-content > div.mb-4 { margin-bottom: 10px; }
         #main-content .overflow-hidden.mb-16 { margin-bottom: 90px; }
         #main-content ul > li { padding: 15px 13px !important; }
-        #main-content .pl-11 { padding-left: 0 !important; }
+        /* 手機：帳號/密碼列仍稍微內縮，對齊標題文字 */
+        #main-content .pl-11 { padding-left: 2.75rem !important; }
         #main-content .pl-11 .text-xs { font-size: 12px !important; }
         #main-content .pl-11 .w-12 { width: 42px !important; }
-        #main-content .pwd-mono { max-width: calc(100vw - 142px); }
+        #main-content .pwd-mono { max-width: calc(100vw - 160px); }
         .modal-panel { width: calc(100vw - 20px) !important; max-width: 520px; }
         .modal-panel form > div:first-child { padding: 20px 16px 16px !important; }
         .modal-panel form > div:first-child > div > div:first-child { display: none; }
@@ -237,44 +238,44 @@
             <ul class="divide-y divide-slate-100">
                 <template x-for="item in filteredPasswords" :key="item.id">
                     <li class="p-4 sm:p-5 hover:bg-slate-50/80 transition-colors group">
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                            <div class="flex-1 min-w-0">
-                                <div class="flex items-center gap-2.5 mb-2">
-                                    <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm shrink-0 shadow-inner">
-                                        <span x-text="(item.siteName || '?').charAt(0).toUpperCase()"></span>
-                                    </div>
-                                    <h3 class="text-base font-semibold text-slate-900 truncate" x-text="item.siteName"></h3>
-                                    <a x-show="item.url" :href="item.url.startsWith('http') ? item.url : 'https://' + item.url" target="_blank" rel="noopener noreferrer" class="text-slate-400 hover:text-blue-600 transition-colors p-1" title="開啟網站">
-                                        <i class="ph ph-link text-base"></i>
-                                    </a>
+                        <!-- 標題列 + 右上角編輯/刪除（手機也同一行） -->
+                        <div class="flex items-start justify-between gap-2 mb-2">
+                            <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                                <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm shrink-0 shadow-inner">
+                                    <span x-text="(item.siteName || '?').charAt(0).toUpperCase()"></span>
                                 </div>
-                                <div class="pl-11 space-y-1.5">
-                                    <div class="flex items-center gap-2">
-                                        <span class="text-xs sm:text-sm font-medium text-slate-400 w-12 shrink-0">帳號:</span>
-                                        <span class="text-xs sm:text-sm text-slate-700 truncate select-all font-mono min-w-0" x-text="item.username"></span>
-                                        <button @click="copyToClipboard(item.username, '帳號已複製')" class="text-slate-300 hover:text-blue-600 p-1.5 rounded hover:bg-blue-50 transition-colors shrink-0" title="複製帳號">
-                                            <i class="ph ph-copy text-sm"></i>
-                                        </button>
-                                    </div>
-                                    <div class="flex items-center gap-2">
-                                        <span class="text-xs sm:text-sm font-medium text-slate-400 w-12 shrink-0">密碼:</span>
-                                        <span class="text-xs sm:text-sm text-slate-800 font-mono select-all bg-slate-100/70 px-2 py-0.5 rounded pwd-mono truncate min-w-0" x-text="item.password"></span>
-                                        <button @click="copyToClipboard(item.password, '密碼已複製')" class="text-slate-300 hover:text-blue-600 p-1.5 rounded hover:bg-blue-50 transition-colors shrink-0" title="複製密碼">
-                                            <i class="ph ph-copy text-sm"></i>
-                                        </button>
-                                    </div>
-                                    <div x-show="item.notes" class="mt-2 text-xs text-slate-500 bg-slate-50 p-2.5 rounded-lg border border-slate-100 whitespace-pre-wrap leading-relaxed">
-                                        <i class="ph ph-note-pencil mr-1 text-blue-500"></i> <span x-text="item.notes"></span>
-                                    </div>
-                                </div>
+                                <h3 class="text-base font-semibold text-slate-900 truncate" x-text="item.siteName"></h3>
+                                <a x-show="item.url" :href="item.url.startsWith('http') ? item.url : 'https://' + item.url" target="_blank" rel="noopener noreferrer" class="text-slate-400 hover:text-blue-600 transition-colors p-1 shrink-0" title="開啟網站">
+                                    <i class="ph ph-link text-base"></i>
+                                </a>
                             </div>
-                            <div class="flex items-center gap-1.5 pl-11 sm:pl-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 justify-end">
+                            <div class="flex items-center gap-0.5 shrink-0 -mr-1">
                                 <button @click="editItem(item)" class="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="編輯">
                                     <i class="ph ph-pencil-simple text-lg"></i>
                                 </button>
                                 <button @click="deleteItem(item.id)" class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="刪除">
                                     <i class="ph ph-trash text-lg"></i>
                                 </button>
+                            </div>
+                        </div>
+                        <!-- 帳號 / 密碼 / 備忘 -->
+                        <div class="pl-11 space-y-1.5">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs sm:text-sm font-medium text-slate-400 w-12 shrink-0">帳號:</span>
+                                <span class="text-xs sm:text-sm text-slate-700 truncate select-all font-mono min-w-0" x-text="item.username"></span>
+                                <button @click="copyToClipboard(item.username, '帳號已複製')" class="text-slate-300 hover:text-blue-600 p-1.5 rounded hover:bg-blue-50 transition-colors shrink-0" title="複製帳號">
+                                    <i class="ph ph-copy text-sm"></i>
+                                </button>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs sm:text-sm font-medium text-slate-400 w-12 shrink-0">密碼:</span>
+                                <span class="text-xs sm:text-sm text-slate-800 font-mono select-all bg-slate-100/70 px-2 py-0.5 rounded pwd-mono truncate min-w-0" x-text="item.password"></span>
+                                <button @click="copyToClipboard(item.password, '密碼已複製')" class="text-slate-300 hover:text-blue-600 p-1.5 rounded hover:bg-blue-50 transition-colors shrink-0" title="複製密碼">
+                                    <i class="ph ph-copy text-sm"></i>
+                                </button>
+                            </div>
+                            <div x-show="item.notes" class="mt-2 text-xs text-slate-500 bg-slate-50 p-2.5 rounded-lg border border-slate-100 whitespace-pre-wrap leading-relaxed">
+                                <i class="ph ph-note-pencil mr-1 text-blue-500"></i> <span x-text="item.notes"></span>
                             </div>
                         </div>
                     </li>
