@@ -11,271 +11,310 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="分享本本">
-    <!-- 改為淺色主題，避免狀態列 / 下拉 overscroll 出現藍色 -->
-    <meta name="theme-color" content="#fbfbfd">
-    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#fbfbfd">
+    <meta name="theme-color" content="#f7f5f0">
     <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
     <link rel="icon" href="favicon.ico">
 
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Alpine.js -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web@2.1.2"></script>
-
-    <!-- App assets (app.js MUST load before Alpine.js so alpine:init listener is registered) -->
     <link rel="stylesheet" href="styles.css">
-    <!-- Keep the original app logic: this file still expects the existing app.js and styles.css alongside it. -->
     <script src="app.js"></script>
 
-    <!-- J.Law Synthesis Lab-inspired, mobile-first presentation -->
     <style>
       :root {
         color-scheme: light;
-        --lab-bg: #fbfbfd;
-        --lab-surface: #ffffff;
-        --lab-text: #1d1d1f;
-        --lab-muted: #86868b;
-        --lab-border: #d2d2d7;
-        --lab-blue: #0071e3;
-        --lab-blue-soft: #eaf3ff;
-        --lab-radius: 18px;
+        --bg: #f7f5f0;
+        --surface: #fffcf7;
+        --text: #1c1917;
+        --muted: #78716c;
+        --border: #e7e5e0;
+        --accent: #0d9488;
+        --accent-soft: #ccfbf1;
+        --header: #f7f5f0;
+        --radius: 14px;
       }
       [x-cloak] { display: none !important; }
-      /* 強制整頁（含 overscroll）都用同一淺色，避免滑動時出現藍色 */
-      html {
-        background: var(--lab-bg) !important;
-        -webkit-text-size-adjust: 100%;
-        overscroll-behavior-y: none;
-      }
-      body {
+      html, body {
         margin: 0;
-        background: var(--lab-bg) !important;
-        color: var(--lab-text) !important;
+        background: var(--bg) !important;
+        color: var(--text);
         font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
         -webkit-tap-highlight-color: transparent;
-        min-height: 100dvh;
+        -webkit-text-size-adjust: 100%;
         overscroll-behavior-y: none;
+        min-height: 100dvh;
       }
       button, input, textarea { font: inherit; }
       button, label[for] { touch-action: manipulation; }
-      button { min-height: 42px; }
       input, textarea {
-        font-size: 16px !important; /* prevents iOS Safari zooming into fields */
-        border-color: var(--lab-border) !important;
-        border-radius: 13px !important;
-        box-shadow: none !important;
+        font-size: 16px !important;
+        border-radius: 10px !important;
       }
       input:focus, textarea:focus {
-        outline: none !important; border-color: var(--lab-blue) !important;
-        box-shadow: 0 0 0 3px rgba(0,113,227,.12) !important;
+        outline: none !important;
+        border-color: var(--accent) !important;
+        box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15) !important;
       }
+
+      /* Header – 米白，與整頁一致 */
       #app-header {
-        background: #fbfbfd !important; /* 不透明，避免滑動時透出其他顏色 */
-        border-color: rgba(210,210,215,.78) !important;
-        box-shadow: 0 1px 0 rgba(0,0,0,.025) !important;
-        -webkit-backdrop-filter: none;
-        backdrop-filter: none;
+        background: var(--header) !important;
+        color: var(--text);
+        border-bottom: 1px solid var(--border) !important;
+        box-shadow: none;
       }
-      #app-header > div { max-width: 760px; padding-left: 16px; padding-right: 16px; }
-      #app-header h1 { color: var(--lab-text) !important; letter-spacing: -.035em; }
-      #app-header p { color: var(--lab-muted) !important; }
-      #app-header .bg-blue-600 {
-        background: var(--lab-text) !important; border-radius: 15px !important;
-        box-shadow: none !important;
+      #app-header input {
+        background: #fff !important;
+        border: 1px solid var(--border) !important;
+        color: var(--text) !important;
+        border-radius: 10px !important;
       }
-      #app-header button, #app-header label {
-        min-height: 42px; border-radius: 12px !important;
-        border-color: var(--lab-border) !important; box-shadow: none !important;
+      #app-header input::placeholder { color: #a8a29e; }
+      #app-header input:focus {
+        background: #fff !important;
+        border-color: var(--accent) !important;
+        box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.12) !important;
       }
-      #app-header input { background: #fff !important; }
-      #main-content { max-width: 760px; }
-      #main-content > .bg-white,
-      #main-content > div.bg-white {
-        border-color: rgba(210,210,215,.8) !important;
-        border-radius: var(--lab-radius) !important;
-        box-shadow: 0 3px 16px rgba(29,29,31,.035) !important;
+      #app-header .hdr-btn {
+        background: #fff;
+        border: 1px solid var(--border);
+        color: var(--text);
+        border-radius: 10px;
+        min-height: 38px;
+        transition: background .15s;
       }
-      #main-content ul > li { transition: background-color .15s ease; }
-      #main-content h3 { color: var(--lab-text) !important; letter-spacing: -.015em; }
-      #main-content .bg-blue-50, #main-content .bg-blue-100 {
-        background: var(--lab-blue-soft) !important;
+      #app-header .hdr-btn:active { background: #f5f5f4; }
+
+      /* Cards */
+      .stat-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: 0 1px 2px rgba(15,23,42,.04);
       }
-      #main-content .text-blue-600 { color: var(--lab-blue) !important; }
-      #main-content button { min-width: 42px; min-height: 42px; }
+      .list-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: 0 1px 2px rgba(15,23,42,.04);
+        overflow: hidden;
+      }
+      .list-row {
+        border-bottom: 1px solid var(--border);
+        transition: background .12s;
+      }
+      .list-row:last-child { border-bottom: none; }
+      .list-row:active { background: #f5f3ee; }
+
+      .avatar {
+        width: 36px; height: 36px;
+        border-radius: 10px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-weight: 700;
+        font-size: 14px;
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+      }
+      .pwd-chip {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        background: #f0ebe3;
+        padding: 2px 8px;
+        border-radius: 6px;
+        font-size: 12px;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .note-line {
+        font-size: 12px;
+        color: var(--muted);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 100%;
+      }
+      .note-line.expanded {
+        white-space: pre-wrap;
+        overflow: visible;
+        text-overflow: unset;
+      }
+
       .fab {
-        position: fixed; z-index: 40; right: 20px;
-        bottom: max(20px, calc(env(safe-area-inset-bottom) + 14px));
-        width: 58px; height: 58px; min-height: 58px; border: 0;
-        border-radius: 20px; display: flex; align-items: center; justify-content: center;
-        background: var(--lab-blue); color: #fff; font-size: 25px;
-        box-shadow: 0 8px 24px rgba(0,113,227,.24);
-        transition: transform .15s ease, background .15s ease;
+        position: fixed; z-index: 40;
+        right: 18px;
+        bottom: max(18px, calc(env(safe-area-inset-bottom) + 12px));
+        width: 54px; height: 54px; min-height: 54px;
+        border: 0; border-radius: 16px;
+        display: flex; align-items: center; justify-content: center;
+        background: var(--accent); color: #fff; font-size: 24px;
+        box-shadow: 0 6px 20px rgba(13,148,136,.35);
+        transition: transform .12s, background .12s;
       }
-      .fab:active { transform: scale(.96); background: #0062c4; }
+      .fab:active { transform: scale(.96); background: #0f766e; }
+
       .modal-panel {
-        border-radius: 24px !important; border: 1px solid rgba(210,210,215,.65);
-        box-shadow: 0 20px 70px rgba(0,0,0,.18) !important;
+        border-radius: 18px !important;
+        border: 1px solid var(--border);
+        box-shadow: 0 20px 60px rgba(15,23,42,.18) !important;
       }
-      .modal-panel form > div:last-child { background: #f5f5f7 !important; }
       .modal-panel button[type="submit"] {
-        background: var(--lab-blue) !important; border-radius: 12px !important;
-        box-shadow: none !important; min-height: 46px;
+        background: var(--accent) !important;
+        border-radius: 10px !important;
+        min-height: 44px;
       }
-      .modal-panel button[type="button"] { border-radius: 12px !important; min-height: 46px; }
       .toast-item {
-        border: 1px solid rgba(210,210,215,.35) !important;
-        border-radius: 15px !important; box-shadow: 0 8px 30px rgba(0,0,0,.15) !important;
+        border-radius: 12px !important;
+        box-shadow: 0 8px 28px rgba(0,0,0,.18) !important;
       }
+
       @media (max-width: 639px) {
-        #app-header > div { padding-left: 14px; padding-right: 14px; padding-bottom: 12px; }
-        #app-header > div > div:first-child { gap: 10px; }
-        #app-header .flex.flex-col.sm\\:flex-row {
-          gap: 10px !important;
+        #app-header .hdr-actions {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 8px;
+          width: 100%;
         }
-        #app-header .flex.flex-wrap.gap-2 {
-          display: grid !important; grid-template-columns: 1fr 1fr; gap: 8px !important;
-        }
-        #app-header .flex.flex-wrap.gap-2 > button,
-        #app-header .flex.flex-wrap.gap-2 > label {
-          width: 100%; padding: 9px 8px !important; font-size: 12px !important;
-        }
-        #app-header .flex.flex-wrap.gap-2 > button:last-of-type {
+        #app-header .hdr-actions > *:last-child {
           grid-column: 1 / -1;
         }
-        #app-header .relative.mt-3 { margin-top: 10px !important; }
-        #app-header input { padding-top: 11px !important; padding-bottom: 11px !important; }
         #main-content {
           padding-left: 12px !important;
           padding-right: 12px !important;
-          /* 手機 header 高度約 190–220px，再加一點緩衝 */
-          padding-top: max(220px, calc(env(safe-area-inset-top) + 200px)) !important;
         }
-        #main-content > div.mb-4 { margin-bottom: 10px; }
-        #main-content .overflow-hidden.mb-16 { margin-bottom: 90px; }
-        #main-content ul > li { padding: 15px 13px !important; }
-        /* 手機：帳號/密碼列仍稍微內縮，對齊標題文字 */
-        #main-content .pl-11 { padding-left: 2.75rem !important; }
-        #main-content .pl-11 .text-xs { font-size: 12px !important; }
-        #main-content .pl-11 .w-12 { width: 42px !important; }
-        #main-content .pwd-mono { max-width: calc(100vw - 160px); }
+        .pwd-chip { max-width: calc(100vw - 150px); }
         .modal-panel { width: calc(100vw - 20px) !important; max-width: 520px; }
-        .modal-panel form > div:first-child { padding: 20px 16px 16px !important; }
-        .modal-panel form > div:first-child > div > div:first-child { display: none; }
-        .modal-panel form > div:first-child > div > div:last-child { margin: 0 !important; text-align: left !important; }
-        .modal-panel #modal-title { font-size: 20px; letter-spacing: -.03em; }
-        .modal-panel form > div:last-child { padding: 12px 16px calc(12px + env(safe-area-inset-bottom)) !important; }
+        .modal-panel form > div:last-child {
+          display: flex; flex-direction: column; gap: 8px;
+          padding-bottom: calc(12px + env(safe-area-inset-bottom)) !important;
+        }
         .modal-panel form > div:last-child button { width: 100%; margin: 0 !important; }
-        .modal-panel form > div:last-child { display: flex; flex-direction: column; gap: 8px; }
-        .fixed.bottom-4.right-4 { right: 12px; }
       }
       @media (prefers-reduced-motion: reduce) {
-        *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+        *, *::before, *::after {
+          transition-duration: .01ms !important;
+          animation-duration: .01ms !important;
+        }
       }
     </style>
-
 </head>
-<body class="bg-[#fbfbfd] text-[#1d1d1f] font-sans antialiased min-h-screen" style="background:#fbfbfd;" x-data="passwordManager()" x-cloak>
+<body class="min-h-screen" x-data="passwordManager()" x-cloak>
 
-    <!-- ============ FIXED HEADER (title + buttons + search, all pinned together) ============ -->
-    <header id="app-header" class="fixed top-0 left-0 right-0 z-30 border-b border-slate-200" style="padding-top:max(0.75rem,env(safe-area-inset-top)); background:#fbfbfd;">
-        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-3">
-            <!-- Row 1: logo + title + buttons -->
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                <div class="flex items-center gap-3">
-                    <div class="bg-blue-600 text-white p-2.5 rounded-xl shadow-lg shadow-indigo-200 shrink-0">
-                        <i class="ph ph-shield-check text-2xl sm:text-3xl"></i>
-                    </div>
+    <!-- Dark header (portfolio style) -->
+    <header id="app-header" class="fixed top-0 left-0 right-0 z-30" style="padding-top:max(0.65rem,env(safe-area-inset-top))">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 pb-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="flex items-center gap-3 min-w-0">
+                    <img src="icons/apple-touch-icon.png" alt="Kumamon" class="w-10 h-10 rounded-xl shadow-sm object-cover shrink-0 ring-1 ring-stone-200">
                     <div class="min-w-0">
-                        <h1 class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">分享本本</h1>
-                        <p class="text-xs sm:text-sm text-slate-500">安全密碼與資料管理（PWA 離線支援）</p>
+                        <h1 class="text-lg sm:text-xl font-semibold text-stone-900 tracking-tight leading-tight">分享本本</h1>
+                        <p class="text-[11px] sm:text-xs text-stone-500 truncate">安全密碼與資料管理 · 離線 PWA</p>
                     </div>
                 </div>
-                <div class="flex flex-wrap gap-2 w-full sm:w-auto">
-                    <button @click="exportToJson()" class="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3.5 py-2 rounded-lg font-medium text-sm transition-colors shadow-sm">
-                        <i class="ph ph-file-js text-lg"></i><span>匯出 JSON</span>
+                <div class="hdr-actions flex flex-wrap gap-2 w-full sm:w-auto">
+                    <button type="button" @click="exportToJson()" class="hdr-btn flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium">
+                        <i class="ph ph-file-js text-base"></i><span>匯出 JSON</span>
                     </button>
-                    <label class="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3.5 py-2 rounded-lg font-medium text-sm transition-colors shadow-sm cursor-pointer">
-                        <i class="ph ph-upload-simple text-lg"></i><span>匯入 JSON</span>
+                    <label class="hdr-btn flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium cursor-pointer">
+                        <i class="ph ph-upload-simple text-base"></i><span>匯入 JSON</span>
                         <input type="file" accept=".json,application/json" class="hidden" @change="importFromJson($event)">
                     </label>
-                    <button @click="exportToHtml()" class="flex-none flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3.5 py-2 rounded-lg font-medium text-sm transition-colors shadow-sm" title="匯出 HTML">
-                        <i class="ph ph-download-simple text-lg"></i><span>匯出 HTML</span>
+                    <button type="button" @click="exportToHtml()" class="hdr-btn flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium">
+                        <i class="ph ph-download-simple text-base"></i><span>匯出 HTML</span>
                     </button>
                 </div>
             </div>
-
-            <!-- Row 2: search bar -->
             <div class="relative mt-3">
-                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <i class="ph ph-magnifying-glass text-slate-400 text-lg"></i>
                 </div>
-                <input type="text" x-model="searchQuery" placeholder="搜尋網站、帳號或備忘錄..." class="w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm text-sm sm:text-base">
+                <input type="text" x-model="searchQuery" placeholder="搜尋網站、帳號或備忘錄..." class="w-full pl-10 pr-4 py-2.5 text-sm">
             </div>
         </div>
     </header>
 
-    <!-- ============ MAIN CONTENT ============ -->
-    <!-- 手機 header 較高（按鈕變兩排），預留足夠空間避免卡片被擋 -->
-    <main class="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8" id="main-content" style="padding-top: max(200px, calc(env(safe-area-inset-top) + 180px))">
-        <!-- Stats -->
-        <div class="mb-4 text-xs sm:text-sm text-slate-500 flex justify-between items-center px-1">
-            <span>共 <span class="font-semibold text-slate-700" x-text="filteredPasswords.length"></span> 筆項目</span>
-            <span x-show="searchQuery" class="text-blue-600">（搜尋過濾中）</span>
+    <main id="main-content" class="max-w-4xl mx-auto px-4 sm:px-6 pb-24" style="padding-top: max(200px, calc(env(safe-area-inset-top) + 180px))">
+
+        <!-- Stats strip -->
+        <div class="grid grid-cols-2 gap-2.5 mb-4">
+            <div class="stat-card px-3.5 py-3">
+                <p class="text-[11px] text-slate-500 mb-0.5">項目總數</p>
+                <p class="text-xl font-semibold text-slate-900 tabular-nums" x-text="passwords.length"></p>
+            </div>
+            <div class="stat-card px-3.5 py-3">
+                <p class="text-[11px] text-slate-500 mb-0.5">目前顯示</p>
+                <p class="text-xl font-semibold text-slate-900 tabular-nums">
+                    <span x-text="filteredPasswords.length"></span>
+                    <span x-show="searchQuery" class="text-xs font-normal text-teal-600 ml-1">（搜尋中）</span>
+                </p>
+            </div>
         </div>
 
         <!-- Empty -->
-        <div x-show="filteredPasswords.length === 0" class="text-center p-12 bg-white rounded-2xl border border-slate-200 shadow-sm my-6">
-            <i class="ph ph-lock-key text-5xl text-slate-300 mb-3"></i>
-            <p class="text-slate-500 text-sm" x-text="searchQuery ? '找不到符合的項目' : '尚無密碼資料，請點擊右下角 + 新增或匯入 JSON'"></p>
+        <div x-show="filteredPasswords.length === 0" class="stat-card text-center py-14 px-6">
+            <img src="icons/apple-touch-icon.png" alt="" class="w-14 h-14 mx-auto mb-3 rounded-2xl opacity-80">
+            <p class="text-slate-500 text-sm" x-text="searchQuery ? '找不到符合的項目' : '尚無資料，點右下角 + 新增或匯入 JSON'"></p>
         </div>
 
         <!-- List -->
-        <div x-show="filteredPasswords.length > 0" class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mb-16">
-            <ul class="divide-y divide-slate-100">
+        <div x-show="filteredPasswords.length > 0" class="list-card">
+            <ul>
                 <template x-for="item in filteredPasswords" :key="item.id">
-                    <li class="p-4 sm:p-5 hover:bg-slate-50/80 transition-colors group">
-                        <!-- 標題列 + 右上角編輯/刪除（手機也同一行） -->
-                        <div class="flex items-start justify-between gap-2 mb-2">
+                    <li class="list-row px-3.5 py-3.5 sm:px-4 sm:py-4">
+                        <!-- Title row + actions -->
+                        <div class="flex items-start justify-between gap-2 mb-1.5">
                             <div class="flex items-center gap-2.5 min-w-0 flex-1">
-                                <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm shrink-0 shadow-inner">
+                                <div class="avatar">
                                     <span x-text="(item.siteName || '?').charAt(0).toUpperCase()"></span>
                                 </div>
-                                <h3 class="text-base font-semibold text-slate-900 truncate" x-text="item.siteName"></h3>
-                                <a x-show="item.url" :href="item.url.startsWith('http') ? item.url : 'https://' + item.url" target="_blank" rel="noopener noreferrer" class="text-slate-400 hover:text-blue-600 transition-colors p-1 shrink-0" title="開啟網站">
-                                    <i class="ph ph-link text-base"></i>
-                                </a>
+                                <div class="min-w-0">
+                                    <div class="flex items-center gap-1.5">
+                                        <h3 class="text-[15px] font-semibold text-slate-900 truncate" x-text="item.siteName"></h3>
+                                        <a x-show="item.url" :href="item.url.startsWith('http') ? item.url : 'https://' + item.url" target="_blank" rel="noopener noreferrer" class="text-slate-400 hover:text-teal-600 p-0.5 shrink-0" title="開啟網站">
+                                            <i class="ph ph-link text-sm"></i>
+                                        </a>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="flex items-center gap-0.5 shrink-0 -mr-1">
-                                <button @click="editItem(item)" class="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="編輯">
-                                    <i class="ph ph-pencil-simple text-lg"></i>
+                            <div class="flex items-center shrink-0 -mr-1">
+                                <button type="button" @click="editItem(item)" class="p-1.5 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-lg" title="編輯">
+                                    <i class="ph ph-pencil-simple text-base"></i>
                                 </button>
-                                <button @click="deleteItem(item.id)" class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="刪除">
-                                    <i class="ph ph-trash text-lg"></i>
+                                <button type="button" @click="deleteItem(item.id)" class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg" title="刪除">
+                                    <i class="ph ph-trash text-base"></i>
                                 </button>
                             </div>
                         </div>
-                        <!-- 帳號 / 密碼 / 備忘 -->
-                        <div class="pl-11 space-y-1.5">
-                            <div class="flex items-center gap-2">
-                                <span class="text-xs sm:text-sm font-medium text-slate-400 w-12 shrink-0">帳號:</span>
-                                <span class="text-xs sm:text-sm text-slate-700 truncate select-all font-mono min-w-0" x-text="item.username"></span>
-                                <button @click="copyToClipboard(item.username, '帳號已複製')" class="text-slate-300 hover:text-blue-600 p-1.5 rounded hover:bg-blue-50 transition-colors shrink-0" title="複製帳號">
+
+                        <!-- Account / password – compact -->
+                        <div class="pl-[46px] space-y-1">
+                            <div class="flex items-center gap-1.5 min-w-0">
+                                <span class="text-[11px] text-slate-400 w-8 shrink-0">帳號</span>
+                                <span class="text-xs text-slate-700 font-mono truncate select-all flex-1 min-w-0" x-text="item.username"></span>
+                                <button type="button" @click="copyToClipboard(item.username, '帳號已複製')" class="p-1 text-slate-300 hover:text-teal-600 rounded shrink-0" title="複製帳號">
                                     <i class="ph ph-copy text-sm"></i>
                                 </button>
                             </div>
-                            <div class="flex items-center gap-2">
-                                <span class="text-xs sm:text-sm font-medium text-slate-400 w-12 shrink-0">密碼:</span>
-                                <span class="text-xs sm:text-sm text-slate-800 font-mono select-all bg-slate-100/70 px-2 py-0.5 rounded pwd-mono truncate min-w-0" x-text="item.password"></span>
-                                <button @click="copyToClipboard(item.password, '密碼已複製')" class="text-slate-300 hover:text-blue-600 p-1.5 rounded hover:bg-blue-50 transition-colors shrink-0" title="複製密碼">
+                            <div class="flex items-center gap-1.5 min-w-0">
+                                <span class="text-[11px] text-slate-400 w-8 shrink-0">密碼</span>
+                                <span class="pwd-chip select-all" x-text="item.password"></span>
+                                <button type="button" @click="copyToClipboard(item.password, '密碼已複製')" class="p-1 text-slate-300 hover:text-teal-600 rounded shrink-0" title="複製密碼">
                                     <i class="ph ph-copy text-sm"></i>
                                 </button>
                             </div>
-                            <div x-show="item.notes" class="mt-2 text-xs text-slate-500 bg-slate-50 p-2.5 rounded-lg border border-slate-100 whitespace-pre-wrap leading-relaxed">
-                                <i class="ph ph-note-pencil mr-1 text-blue-500"></i> <span x-text="item.notes"></span>
+                            <!-- Notes: single line by default, tap to expand -->
+                            <div x-show="item.notes" class="flex items-start gap-1.5 pt-0.5">
+                                <i class="ph ph-note-pencil text-slate-300 text-sm mt-0.5 shrink-0"></i>
+                                <button type="button"
+                                    class="note-line text-left flex-1 min-w-0"
+                                    :class="{ 'expanded': item._noteOpen }"
+                                    @click="item._noteOpen = !item._noteOpen"
+                                    :title="item._noteOpen ? '點擊收合' : '點擊展開'"
+                                    x-text="item.notes"></button>
                             </div>
                         </div>
                     </li>
@@ -284,63 +323,57 @@
         </div>
     </main>
 
-    <!-- Floating "+" button -->
+    <!-- FAB -->
     <button type="button" class="fab" @click.prevent.stop="openModal()" title="新增項目" aria-label="新增項目">
         <i class="ph ph-plus"></i>
     </button>
 
     <!-- Modal -->
-    <div x-show="isModalOpen" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true" style="display:none">
+    <div x-show="isModalOpen" class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true" style="display:none">
         <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div x-show="isModalOpen" x-transition.opacity class="fixed inset-0 bg-slate-900 bg-opacity-50 backdrop-blur-xs transition-opacity" @click="closeModal()"></div>
+            <div x-show="isModalOpen" x-transition.opacity class="fixed inset-0 bg-slate-900/50 transition-opacity" @click="closeModal()"></div>
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-            <div x-show="isModalOpen" x-transition class="modal-panel inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
+            <div x-show="isModalOpen" x-transition class="modal-panel inline-block align-bottom bg-white text-left overflow-hidden transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
                 <form @submit.prevent="saveItem">
-                    <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                        <div class="sm:flex sm:items-start">
-                            <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
-                                <i class="ph text-blue-600 text-xl" :class="editingId ? 'ph-pencil-simple' : 'ph-plus'"></i>
+                    <div class="bg-white px-4 pt-5 pb-4 sm:p-6">
+                        <div class="flex items-center gap-3 mb-4">
+                            <img src="icons/apple-touch-icon.png" alt="" class="w-10 h-10 rounded-xl object-cover">
+                            <h3 class="text-lg font-semibold text-slate-900" id="modal-title" x-text="editingId ? '編輯項目' : '新增密碼項目'"></h3>
+                        </div>
+                        <div class="space-y-3.5">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">網站/服務名稱 <span class="text-rose-500">*</span></label>
+                                <input type="text" x-model="formData.siteName" required class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm">
                             </div>
-                            <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-                                <h3 class="text-lg leading-6 font-medium text-slate-900" id="modal-title" x-text="editingId ? '編輯項目' : '新增密碼項目'"></h3>
-                                <div class="mt-4 space-y-3.5">
-                                    <div>
-                                        <label class="block text-xs font-semibold text-slate-600 mb-1">網站/服務名稱 <span class="text-red-500">*</span></label>
-                                        <input type="text" x-model="formData.siteName" required class="w-full border border-slate-300 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    </div>
-                                    <div>
-                                        <label class="block text-xs font-semibold text-slate-600 mb-1">網址 (選填)</label>
-                                        <input type="text" x-model="formData.url" placeholder="ex: example.com" class="w-full border border-slate-300 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    </div>
-                                    <div>
-                                        <label class="block text-xs font-semibold text-slate-600 mb-1">帳號/使用者名稱 <span class="text-red-500">*</span></label>
-                                        <input type="text" x-model="formData.username" required class="w-full border border-slate-300 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    </div>
-                                    <div>
-                                        <label class="block text-xs font-semibold text-slate-600 mb-1">密碼 <span class="text-red-500">*</span></label>
-                                        <div class="relative">
-                                            <input :type="showPasswordInModal ? 'text' : 'password'" x-model="formData.password" required class="w-full border border-slate-300 rounded-lg px-3.5 py-2 pr-10 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                            <button type="button" @click="showPasswordInModal = !showPasswordInModal" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600">
-                                                <i class="ph text-lg" :class="showPasswordInModal ? 'ph-eye-slash' : 'ph-eye'"></i>
-                                            </button>
-                                        </div>
-                                        <div class="mt-2">
-                                            <button type="button" @click="generatePassword" class="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 font-medium">
-                                                <i class="ph ph-magic-wand text-sm"></i> 產生安全隨機密碼
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label class="block text-xs font-semibold text-slate-600 mb-1">備忘錄 (選填)</label>
-                                        <textarea x-model="formData.notes" rows="2" class="w-full border border-slate-300 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
-                                    </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">網址 (選填)</label>
+                                <input type="text" x-model="formData.url" placeholder="ex: example.com" class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">帳號/使用者名稱 <span class="text-rose-500">*</span></label>
+                                <input type="text" x-model="formData.username" required class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">密碼 <span class="text-rose-500">*</span></label>
+                                <div class="relative">
+                                    <input :type="showPasswordInModal ? 'text' : 'password'" x-model="formData.password" required class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 pr-10 text-sm font-mono">
+                                    <button type="button" @click="showPasswordInModal = !showPasswordInModal" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600">
+                                        <i class="ph text-lg" :class="showPasswordInModal ? 'ph-eye-slash' : 'ph-eye'"></i>
+                                    </button>
                                 </div>
+                                <button type="button" @click="generatePassword" class="mt-2 text-xs text-teal-600 hover:text-teal-800 flex items-center gap-1 font-medium">
+                                    <i class="ph ph-magic-wand text-sm"></i> 產生安全隨機密碼
+                                </button>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">備忘錄 (選填)</label>
+                                <textarea x-model="formData.notes" rows="2" class="w-full border border-slate-200 rounded-lg px-3.5 py-2.5 text-sm" placeholder="簡短備註即可"></textarea>
                             </div>
                         </div>
                     </div>
-                    <div class="bg-slate-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse rounded-b-2xl gap-2">
-                        <button type="submit" class="w-full sm:w-auto inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">儲存</button>
-                        <button type="button" @click="closeModal()" class="mt-3 sm:mt-0 w-full sm:w-auto inline-flex justify-center rounded-lg border border-slate-300 shadow-sm px-4 py-2 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">取消</button>
+                    <div class="bg-[#f5f2eb] px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-2 rounded-b-[18px]">
+                        <button type="submit" class="w-full sm:w-auto inline-flex justify-center rounded-lg border border-transparent px-4 py-2.5 text-sm font-medium text-white hover:opacity-90">儲存</button>
+                        <button type="button" @click="closeModal()" class="mt-2 sm:mt-0 w-full sm:w-auto inline-flex justify-center rounded-lg border border-stone-200 px-4 py-2.5 bg-white text-sm font-medium text-stone-700 hover:bg-stone-50">取消</button>
                     </div>
                 </form>
             </div>
@@ -350,7 +383,7 @@
     <!-- Toasts -->
     <div class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none" style="bottom:max(1rem,calc(env(safe-area-inset-bottom) + 1rem))">
         <template x-for="toast in toasts" :key="toast.id">
-            <div class="toast-item bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-3 min-w-[220px] pointer-events-auto border border-slate-800">
+            <div class="toast-item bg-slate-900 text-white px-4 py-3 rounded-xl flex items-center gap-3 min-w-[200px] pointer-events-auto">
                 <i class="ph text-xl shrink-0" :class="toast.type === 'success' ? 'ph-check-circle text-emerald-400' : (toast.type === 'error' ? 'ph-warning-circle text-rose-400' : 'ph-info text-sky-400')"></i>
                 <span x-text="toast.message" class="text-sm font-medium"></span>
             </div>
