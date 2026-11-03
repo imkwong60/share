@@ -15,6 +15,7 @@ document.addEventListener('alpine:init', () => {
     showPasswordInModal: false,
     revealedPasswords: {},
     toasts: [],
+    isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
     formData: { siteName: '', url: '', username: '', password: '', notes: '' },
 
     // ============================================================
@@ -24,6 +25,19 @@ document.addEventListener('alpine:init', () => {
       this.loadFromStorage();
       this.registerServiceWorker();
       this.adjustContentOffset();
+      this.setupOnlineStatus();
+    },
+
+    setupOnlineStatus() {
+      this.isOnline = navigator.onLine;
+      const update = () => {
+        this.isOnline = navigator.onLine;
+        if (!this.isOnline) {
+          this.showToast('已進入離線模式，資料仍可本機使用', 'info');
+        }
+      };
+      window.addEventListener('online', update);
+      window.addEventListener('offline', update);
     },
 
     adjustContentOffset() {
