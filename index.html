@@ -212,7 +212,18 @@
                     <img src="icons/apple-touch-icon.png" alt="Kumamon" class="w-10 h-10 rounded-xl shadow-sm object-cover shrink-0 ring-1 ring-stone-200">
                     <div class="min-w-0">
                         <h1 class="text-lg sm:text-xl font-semibold text-stone-900 tracking-tight leading-tight">分享本本</h1>
-                        <p class="text-[11px] sm:text-xs text-stone-500 truncate">安全密碼與資料管理 · 離線 PWA</p>
+                        <div class="flex items-center gap-2 min-w-0">
+                            <p class="text-[11px] sm:text-xs text-stone-500 truncate">安全密碼與資料管理 · 離線 PWA</p>
+                            <span class="inline-flex items-center gap-1 shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium border"
+                                  :class="isOnline
+                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                    : 'bg-amber-50 text-amber-700 border-amber-200'"
+                                  :title="isOnline ? '已連線' : '離線模式'">
+                                <span class="w-1.5 h-1.5 rounded-full"
+                                      :class="isOnline ? 'bg-emerald-500' : 'bg-amber-500'"></span>
+                                <span x-text="isOnline ? '在線' : '離線'"></span>
+                            </span>
+                        </div>
                     </div>
                 </div>
                 <div class="hdr-actions flex flex-wrap gap-2 w-full sm:w-auto">
