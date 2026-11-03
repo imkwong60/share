@@ -274,18 +274,18 @@
         <!-- List -->
         <div x-show="filteredPasswords.length > 0" class="list-card">
             <ul>
-                <template x-for="item in filteredPasswords" :key="item.id">
+                <template x-for="(item, index) in filteredPasswords" :key="String(item.id) + '-' + index">
                     <li class="list-row px-3.5 py-3.5 sm:px-4 sm:py-4">
                         <!-- Title row + actions -->
                         <div class="flex items-start justify-between gap-2 mb-1.5">
                             <div class="flex items-center gap-2.5 min-w-0 flex-1">
                                 <div class="avatar">
-                                    <span x-text="(item.siteName || '?').charAt(0).toUpperCase()"></span>
+                                    <span x-text="String(item.siteName || '?').charAt(0).toUpperCase()"></span>
                                 </div>
                                 <div class="min-w-0">
                                     <div class="flex items-center gap-1.5">
                                         <h3 class="text-[15px] font-semibold text-slate-900 truncate" x-text="item.siteName"></h3>
-                                        <a x-show="item.url" :href="item.url.startsWith('http') ? item.url : 'https://' + item.url" target="_blank" rel="noopener noreferrer" class="text-slate-400 hover:text-teal-600 p-0.5 shrink-0" title="開啟網站">
+                                        <a x-show="item.url" :href="safeUrl(item.url)" target="_blank" rel="noopener noreferrer" class="text-slate-400 hover:text-teal-600 p-0.5 shrink-0" title="開啟網站">
                                             <i class="ph ph-link text-sm"></i>
                                         </a>
                                     </div>
