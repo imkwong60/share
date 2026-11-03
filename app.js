@@ -215,41 +215,106 @@ document.addEventListener('alpine:init', () => {
       this.showToast('已匯出 JSON', 'success');
     },
 
+    // 從各式 JSON 抽出陣列（支援直接陣列或 {data|items|passwords|records} 包裝）
+    extractImportArray(raw) {
+      if (Array.isArray(raw)) return raw;
+      if (raw && typeof raw === 'object') {
+        for (const k of ['data', 'items', 'passwords', 'records', 'list', 'entries']) {
+          if (Array.isArray(raw[k])) return raw[k];
+        }
+      }
+      return null;
+    },
+
+    // 相容多種欄位名（本 App 匯出 / 其他工具 / 中英混用）
+    normalizeImportItem(item, index) {
+      if (!item || typeof item !== 'object') return null;
+      const pick = (...keys) => {
+        for (const k of keys) {
+          if (item[k] != null && String(item[k]).trim() !== '') return String(item[k]).trim();
+        }
+        return '';
+      };
+      const siteName = pick('siteName', 'site', 'name', 'title', 'service', 'website', '網站', '名稱', '服務');
+      const username = pick('username', 'user', 'account', 'login', 'email', '帳號', '使用者', '账户');
+      const password = pick('password', 'pass', 'pwd', 'passwd', '密碼', '密码');
+      if (!siteName || !username || !password) return null;
+      const url = pick('url', 'link', 'websiteUrl', 'href', '網址', '网址');
+      const notes = pick('notes', 'note', 'memo', 'remark', 'comment', '備忘', '備註', '备注');
+      const id = pick('id') || `imp-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 8)}`;
+      return { siteName, url, username, password, notes, id };
+    },
+
     async importFromJson(event) {
-      const file = event.target.files[0];
+      const input = event.target;
+      const file = input.files && input.files[0];
       if (!file) return;
       try {
         const text = await file.text();
-        const data = JSON.parse(text);
-        if (!Array.isArray(data)) {
-          this.showToast('JSON 格式錯誤：必須是陣列', 'error');
+        let raw;
+        try {
+          raw = JSON.parse(text);
+        } catch (parseErr) {
+          this.showToast('匯入失敗：檔案不是有效 JSON', 'error');
           return;
         }
-        const valid = data.filter(item => item && item.siteName && item.username && item.password);
-        if (valid.length === 0) {
-          this.showToast('找不到有效項目（需含 siteName, username, password）', 'error');
+
+        const arr = this.extractImportArray(raw);
+        if (!arr) {
+          this.showToast('JSON 格式錯誤：需要陣列，或含 data/items/passwords 的物件', 'error');
           return;
         }
-        const normalized = valid.map(item => ({
-          siteName: String(item.siteName),
-          url: String(item.url || ''),
-          username: String(item.username),
-          password: String(item.password),
-          notes: String(item.notes || ''),
-          id: item.id || String(Date.now()) + Math.random().toString(36).slice(2, 8)
-        }));
-        if (confirm(`即將匯入 ${normalized.length} 筆項目，要合併還是取代現有資料？\n\n按「確定」=合併至現有資料\n按「取消」=取代全部現有資料`)) {
+
+        const normalized = [];
+        const skipped = [];
+        arr.forEach((item, i) => {
+          const n = this.normalizeImportItem(item, i);
+          if (n) normalized.push(n);
+          else skipped.push(i + 1);
+        });
+
+        if (normalized.length === 0) {
+          this.showToast(
+            '找不到有效項目。每筆需有網站名稱、帳號、密碼（欄位名可用 siteName/username/password 或 site/user/pass）',
+            'error'
+          );
+          return;
+        }
+
+        // 清空搜尋，避免匯入後被 filter 遮住
+        this.searchQuery = '';
+
+        const merge = confirm(
+          `即將匯入 ${normalized.length} 筆` +
+            (skipped.length ? `（略過 ${skipped.length} 筆缺欄位）` : '') +
+            `\n\n「確定」＝合併到現有資料\n「取消」＝清空後只保留匯入資料`
+        );
+
+        if (merge) {
+          // 用新陣列賦值，確保 Alpine 偵測到變更
           this.passwords = [...this.passwords, ...normalized];
         } else {
-          this.passwords = normalized;
+          this.passwords = [...normalized];
         }
+
         this.saveToLocalStorage();
-        this.showToast(`已匯入 ${normalized.length} 筆`, 'success');
+
+        // 再讀一次確認寫入成功（部分 WebView 上 localStorage 偶發延遲）
+        try {
+          const check = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+          if (!Array.isArray(check) || check.length === 0) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(this.passwords));
+          }
+        } catch (_) {}
+
+        this.showToast(`已匯入 ${normalized.length} 筆（目前共 ${this.passwords.length} 筆）`, 'success');
       } catch (e) {
         console.error(e);
-        this.showToast('匯入失敗：無法解析 JSON', 'error');
+        this.showToast('匯入失敗：' + (e && e.message ? e.message : '未知錯誤'), 'error');
+      } finally {
+        // 允許重複選擇同一檔案
+        input.value = '';
       }
-      event.target.value = '';
     },
 
     exportToHtml() {
