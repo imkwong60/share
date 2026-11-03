@@ -60,7 +60,8 @@ document.addEventListener('alpine:init', () => {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         try {
-          this.passwords = JSON.parse(saved);
+          const parsed = JSON.parse(saved);
+          this.passwords = this.sanitizeList(Array.isArray(parsed) ? parsed : []);
         } catch (e) {
           console.error("解析儲存資料失敗", e);
           this.passwords = [...initialData];
@@ -68,6 +69,41 @@ document.addEventListener('alpine:init', () => {
       } else {
         this.passwords = [...initialData];
       }
+    },
+
+    // 確保每筆有唯一 id、字串欄位，避免 x-for / :href 因壞資料整表不渲染
+    sanitizeList(list) {
+      const seen = new Set();
+      const out = [];
+      (list || []).forEach((item, index) => {
+        if (!item || typeof item !== 'object') return;
+        const siteName = String(item.siteName ?? item.site ?? item.name ?? '').trim();
+        const username = String(item.username ?? item.user ?? item.account ?? '').trim();
+        const password = String(item.password ?? item.pass ?? item.pwd ?? '');
+        if (!siteName && !username) return;
+        let id = item.id != null ? String(item.id) : '';
+        if (!id || seen.has(id)) {
+          id = `row-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 8)}`;
+        }
+        seen.add(id);
+        out.push({
+          id,
+          siteName: siteName || username || '(未命名)',
+          url: String(item.url ?? item.link ?? '').trim(),
+          username,
+          password,
+          notes: String(item.notes ?? item.note ?? item.memo ?? ''),
+          _noteOpen: false
+        });
+      });
+      return out;
+    },
+
+    safeUrl(url) {
+      const u = String(url || '').trim();
+      if (!u) return '#';
+      if (/^https?:\/\//i.test(u)) return u;
+      return 'https://' + u;
     },
 
     registerServiceWorker() {
@@ -292,9 +328,9 @@ document.addEventListener('alpine:init', () => {
 
         if (merge) {
           // 用新陣列賦值，確保 Alpine 偵測到變更
-          this.passwords = [...this.passwords, ...normalized];
+          this.passwords = this.sanitizeList([...this.passwords, ...normalized]);
         } else {
-          this.passwords = [...normalized];
+          this.passwords = this.sanitizeList(normalized);
         }
 
         this.saveToLocalStorage();
@@ -325,7 +361,7 @@ document.addEventListener('alpine:init', () => {
       const rows = this.passwords.map(p => `
         <tr>
           <td>${this.escapeHtml(p.siteName)}</td>
-          <td>${p.url ? `<a href="${this.escapeHtml(p.url.startsWith('http') ? p.url : 'https://' + p.url)}" target="_blank">${this.escapeHtml(p.url)}</a>` : ''}</td>
+          <td>${p.url ? `<a href="${this.escapeHtml((String(p.url||'').match(/^https?:\/\//i) ? p.url : ('https://' + p.url)))}" target="_blank">${this.escapeHtml(p.url)}</a>` : ''}</td>
           <td><code>${this.escapeHtml(p.username)}</code></td>
           <td><code>${this.escapeHtml(p.password)}</code></td>
           <td>${this.escapeHtml(p.notes || '').replace(/\n/g, '<br>')}</td>
