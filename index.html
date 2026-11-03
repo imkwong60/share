@@ -17,10 +17,11 @@
     <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
     <link rel="icon" href="favicon.ico">
 
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
-    <script src="https://unpkg.com/@phosphor-icons/web@2.1.2"></script>
+    <!-- Local assets for reliable offline UI -->
+    <link rel="stylesheet" href="./tailwind-built.css">
+    <link rel="stylesheet" href="./icons-font/style.css">
     <link rel="stylesheet" href="styles.css">
+    <script defer src="./alpine.min.js"></script>
     <script src="app.js"></script>
 
     <style>
@@ -401,15 +402,14 @@
         </template>
     </div>
 
-
 <script>
-/* Offline safety: if Alpine fails to load, uncloak so the page is still visible */
+/* Offline safety: if Alpine fails, uncloak so page is not forever blank */
 (function () {
   setTimeout(function () {
     var b = document.body;
     if (b && b.hasAttribute('x-cloak') && !window.Alpine) {
       b.removeAttribute('x-cloak');
-      console.warn('[分享本本] Alpine 未載入，已解除 x-cloak（可能處於離線且 CDN 未快取）');
+      console.warn('[分享本本] Alpine 未載入，已解除 x-cloak');
     }
   }, 2500);
 })();
